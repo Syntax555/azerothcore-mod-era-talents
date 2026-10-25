@@ -15,6 +15,7 @@ function ET.Init()
   if ET.InitHook then ET.InitHook() end
   if ET.InitTooltips then ET.InitTooltips() end
   if ET.InitInspect then ET.InitInspect() end
+  if ET.InitDragonUI then ET.InitDragonUI() end
 end
 
 local boot = CreateFrame("Frame")
