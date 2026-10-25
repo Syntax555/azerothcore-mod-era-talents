@@ -1,3 +1,24 @@
+## mod-playerbots-portable fork
+
+This fork carries what [mod-playerbots-portable](https://github.com/Syntax555/mod-playerbots-portable) needs on top of [lathcf/azerothcore-mod-era-talents](https://github.com/lathcf/azerothcore-mod-era-talents). Work happens on `main`; every push publishes `EraTalents-addon-latest.zip` in the [Latest release](https://github.com/Syntax555/azerothcore-mod-era-talents/releases/latest).
+
+For a quick addon update, close WoW and extract the ZIP into `Interface/AddOns/` so that `Interface/AddOns/EraTalents/EraTalents.toc` exists. The merged `Data/patch-V.mpq` must match the server's data generation and comes only with `EraTalents-client-latest.zip` from the server release; install that package whenever the server is updated.
+
+The server module and its client addon are built together by [mod-playerbots-portable](https://github.com/Syntax555/mod-playerbots-portable), which pins a tested commit of this branch.
+
+Changes on `main`:
+
+- Selects historical trees, training, glyph rules and point budgets from each character's own earned Individual Progression tier.
+- Merges German names, descriptions and aura text into the historical spell rows and translates the addon.
+- Keeps historical spells in their native spell groups and trains priest racial spells through their class quests.
+- Shows inspected bots' historical trees and lets owners train their controlled altbots.
+- Opens historical trees from DragonUI's talent window and keeps the inspect tree above the Inspect frame.
+- Sends each character's trainer list to DragonUI's spellbook and level-up notice, closes the glyph page before earned Wrath and shows MultiBot bot spellbooks as a DragonUI-style book.
+
+The server pins a tested commit of `main` in its `versions.lock.json`. Upstream updates are merged into `main`; the original README follows.
+
+---
+
 # mod-era-talents
 
 ## AzerothCore Module

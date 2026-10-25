@@ -1,0 +1,50 @@
+name: Latest
+
+# Every push to main publishes the rolling Latest release with EraTalents-addon-latest.zip.
+# The previous assets stay downloadable until the new ZIP is built and checked.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: latest
+  cancel-in-progress: false
+
+jobs:
+  latest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Lua syntax
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lua5.1 > /dev/null
+          git ls-files -z -- client-addon/EraTalents | grep -z '\.lua$' | xargs -0 -r -n 50 luac5.1 -p
+
+      - name: Package
+        run: python3 .github/scripts/package_latest.py --addon client-addon/EraTalents:EraTalents.toc:EraTalents --extra LICENSE:EraTalents/LICENSE --output "EraTalents-addon-latest.zip"
+
+      - name: Publish the Latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          notes="$RUNNER_TEMP/notes.md"
+          {
+            echo "Rolling build of \`main\` at ${GITHUB_SHA::12}."
+            echo
+            cat .github/release-notes.md
+          } > "$notes"
+          if gh release view latest > /dev/null 2>&1; then
+            gh release upload latest "EraTalents-addon-latest.zip" --clobber
+            git tag -f latest "$GITHUB_SHA"
+            git push --force origin refs/tags/latest
+            gh release edit latest --title Latest --notes-file "$notes" --latest
+          else
+            gh release create latest "EraTalents-addon-latest.zip" --target "$GITHUB_SHA" --title Latest --notes-file "$notes" --latest
+          fi
