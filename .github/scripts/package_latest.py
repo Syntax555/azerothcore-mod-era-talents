@@ -6,6 +6,7 @@ files stay unless they are known development material (repository metadata,
 tests, docs and tooling), because addons may load Lua, textures and fonts
 dynamically. Every folder gets SOURCE_REVISION.txt with the packaged commit.
 The selection matches mod-playerbots-portable's cmake/AddonRuntime.py.
+With --luac, every packaged Lua file must pass that compiler's syntax check.
 """
 from __future__ import annotations
 
@@ -118,7 +119,20 @@ def runtime_paths(files: dict[str, Path], toc: str) -> list[str]:
     return [relative for relative in files if relative in protected or not development_path(relative)]
 
 
-def package(checkout: Path, addons: list[tuple[str, str, str]], extras: list[tuple[str, str]], output: Path) -> None:
+def check_lua(entries: dict[str, bytes], luac: str) -> None:
+    for name, content in sorted(entries.items()):
+        if not name.lower().endswith(".lua"):
+            continue
+        # WoW accepts a UTF-8 BOM that stock Lua 5.1 rejects; strip it in memory only.
+        result = subprocess.run([luac, "-p", "-"], input=content.removeprefix(b"\xef\xbb\xbf"),
+                                capture_output=True, check=False)
+        if result.returncode:
+            detail = result.stderr.decode("utf-8", errors="replace").strip()
+            raise ValueError(f"{name}: {detail or 'Lua syntax check failed'}")
+
+
+def package(checkout: Path, addons: list[tuple[str, str, str]], extras: list[tuple[str, str]], output: Path,
+            luac: str | None = None) -> None:
     revision = subprocess.run(["git", "-C", str(checkout), "rev-parse", "HEAD"], check=True,
                               capture_output=True, text=True).stdout.strip()
     entries: dict[str, bytes] = {}
@@ -129,6 +143,8 @@ def package(checkout: Path, addons: list[tuple[str, str, str]], extras: list[tup
         entries[f"{name}/SOURCE_REVISION.txt"] = (revision + "\n").encode("ascii")
     for source, target in extras:
         entries[safe_relative(target)] = (checkout / safe_relative(source)).read_bytes()
+    if luac:
+        check_lua(entries, luac)
     temporary = output.with_suffix(".zip.tmp")
     with zipfile.ZipFile(temporary, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for name, content in sorted(entries.items()):
@@ -151,13 +167,14 @@ def main() -> None:
                         help="addon folder in the checkout, its TOC and the installed folder name")
     parser.add_argument("--extra", action="append", default=[], metavar="SOURCE:TARGET",
                         help="additional committed file and its path in the ZIP, such as a license")
+    parser.add_argument("--luac", help="Lua compiler that checks the syntax of every packaged Lua file")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     addons = [tuple(value.split(":", 2)) for value in args.addon]
     extras = [tuple(value.split(":", 1)) for value in args.extra]
     if any(len(value) != 3 for value in addons) or any(len(value) != 2 for value in extras):
         parser.error("--addon takes FOLDER:TOC:NAME and --extra takes SOURCE:TARGET")
-    package(args.checkout.resolve(), addons, extras, args.output.resolve())
+    package(args.checkout.resolve(), addons, extras, args.output.resolve(), args.luac)
 
 
 if __name__ == "__main__":
