@@ -26,6 +26,7 @@ Locales.lua
 EraTalents.lua
 Comms.lua
 DragonUIBook.lua
+DragonUIGlyphs.lua
 Tooltip.lua
 TalentUI.lua
 Hook.lua

@@ -153,6 +153,11 @@ function ET.OnAddonMsg(prefix, message)
     end
     return
   end
+  local glyphs = string.match(message, "^GLYPHS%s+([01])$")
+  if glyphs then
+    ET.state.glyphsAllowed = glyphs == "1"
+    return
+  end
   local bguid, kind, complete = ET.ParseBook(ET.books, message)
   if bguid then
     if complete then

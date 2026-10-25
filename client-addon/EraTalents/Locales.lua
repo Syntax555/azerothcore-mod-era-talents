@@ -35,6 +35,8 @@ local deDE = {
   ["Protection"] = "Schutz", ["Restoration"] = "Wiederherstellung",
   ["Retribution"] = "Vergeltung", ["Shadow"] = "Schatten",
   ["Subtlety"] = "Täuschung", ["Survival"] = "Überleben",
+  ["Glyphs become available once this character has earned Wrath of the Lich King."] =
+    "Glyphen stehen zur Verfügung, sobald dieser Charakter Wrath of the Lich King erspielt hat.",
 }
 ET.L = setmetatable(ET.locale == "deDE" and deDE or {}, {
   __index = function(_, key) return key end,

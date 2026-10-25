@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "EraGlyphGate.h"
 #include "EraTalentBots.h"
 #include "EraTalentContent.h"
 #include "EraTalentIP.h"
@@ -242,6 +243,10 @@ namespace EraTalentsComms
         std::string const& stamp = sEraTalentContent->GenerationStamp();
         if (!stamp.empty())
             p->Whisper(std::string("ERATAL\tGEN ") + stamp, LANG_ADDON, p);
+
+        // "GLYPHS <0|1>": whether the glyph gate lets this character use glyphs, so the addon
+        // closes a glyph page that could not take one.
+        p->Whisper(std::string("ERATAL\tGLYPHS ") + (EraGlyphGate::Allowed(p) ? "1" : "0"), LANG_ADDON, p);
     }
 }
 
