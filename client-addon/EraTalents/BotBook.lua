@@ -422,6 +422,17 @@ local function PlaceTabs(scale)
   end
 end
 
+-- DragonUI's tab art and width, then their places. Blizzard's OnShow resize undoes the width, and
+-- DragonUI calls this again afterwards, as it does for its own book.
+local function SkinTabs()
+  local panel = _G.DragonUI and _G.DragonUI.CharacterPanel
+  for _, cat in ipairs(TAB_ORDER) do
+    local tab = frame.tabs[cat]
+    if panel and panel.ReskinTab then panel.ReskinTab(tab, true) else PanelTemplates_TabResize(tab, 0) end
+  end
+  if frame.scale then PlaceTabs(frame.scale) end
+end
+
 -- Drawing -----------------------------------------------------------------------------------------
 
 Render = function()
@@ -438,13 +449,11 @@ Render = function()
   local className = unit and UnitClass(unit) or nil
   frame.tabs[CLASS]:SetText(className or L["Talents"])
   frame.tabs[GENERAL]:SetText(_G.GENERAL)
-  local panel = _G.DragonUI and _G.DragonUI.CharacterPanel
+  SkinTabs()
   for _, cat in ipairs(TAB_ORDER) do
     local tab = frame.tabs[cat]
-    if panel and panel.ReskinTab then panel.ReskinTab(tab, true) else PanelTemplates_TabResize(tab, 0) end
     if cat == view.cat then PanelTemplates_SelectTab(tab) else PanelTemplates_DeselectTab(tab) end
   end
-  PlaceTabs(scale)
   frame.selected = view.cat
   local spreads = book.FlowSections(ET.BotBookSections(trees, view.cat, names, view.query), wide and 2 or 1,
                                     wide and book.WIDE_W or book.NARROW_W)
@@ -666,12 +675,18 @@ local function BuildPager()
                        book.GRID.viewTop - book.GRID.viewH / 2)
 end
 
+-- DragonUI levels a tab one above its parent, four while selected. The tabs' own holder sits above
+-- the paper, as in DragonUI's book, so the tab not selected stays in front of the wood strip.
 local function BuildTabs()
+  local holder = CreateFrame("Frame", nil, frame)
+  holder:SetAllPoints(frame)
+  holder:SetFrameLevel(frame:GetFrameLevel() + 3)
   frame.tabs = {}
   for _, cat in ipairs(TAB_ORDER) do
-    local tab = CreateFrame("Button", "EraTalentsBotBookFrameTab" .. cat, frame, "CharacterFrameTabButtonTemplate")
+    local tab = CreateFrame("Button", "EraTalentsBotBookFrameTab" .. cat, holder, "CharacterFrameTabButtonTemplate")
     tab:SetID(cat)
-    tab:SetFrameLevel(frame:GetFrameLevel() + 3)
+    tab:SetFrameLevel(holder:GetFrameLevel() + 1)
+    tab._duiRelayout = SkinTabs
     tab:SetScript("OnClick", function(self)
       view.cat, view.page, view.picked = self:GetID(), 1, true
       PlaySound("igCharacterInfoTab")
