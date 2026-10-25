@@ -240,6 +240,8 @@ def emit_sql(d) -> str:
 
 
 def emit_lua(d) -> str:
+    import era_locales as locales
+
     era, cls = int(d["era"]), int(d["class"])
     era_name = d.get("eraName") or ERA_NAMES.get(era, str(era))
     cls_name = d.get("className") or CLASS_TOKENS.get(cls, str(cls))
@@ -251,7 +253,9 @@ def emit_lua(d) -> str:
     tab_parts = []
     for tab in d["tabs"]:
         bg = tab.get("background", "")
-        tab_parts.append(f"[{int(tab['key'])}]={{name={_lua_str(tab['name'])}, background={_lua_str(bg)}}}")
+        german_name = locales.translate(tab['name'], cls)
+        tab_parts.append(f"[{int(tab['key'])}]={{name={_lua_str(tab['name'])}, background={_lua_str(bg)}, "
+                         + "localized={deDE={name=" + _lua_str(german_name) + "}}}")
     L.append("  tabs = { " + ", ".join(tab_parts) + " },")
     # A granted spell only has a `grant` (SetHyperlink) tooltip in the addon if the CLIENT will
     # actually have a tooltip for it: a stock spell (base Spell.dbc) always does; a custom-band id
@@ -259,7 +263,9 @@ def emit_lua(d) -> str:
     # helper ONLY when it carries `client:`). A grant to a client-LESS custom passive (a hidden proc
     # carrier — Redoubt/Reckoning/Eye for an Eye grant these) is not in the client DBC at all, so a
     # SetHyperlink to it renders a BLANK tooltip. Those nodes must keep their authored prose instead.
-    _client_helper_ids = {int(h["id"]) for h in (d.get("helpers") or []) if h.get("client")}
+    _client_helper_ids = {int(h["id"]) for h in (d.get("helpers") or [])
+                          if h.get("client") and (h["client"].get("description")
+                                                 or h["client"].get("auraDescription"))}
 
     def _grant_is_client_visible(sid):
         return sid < 920000 or sid in _client_helper_ids
@@ -272,6 +278,9 @@ def emit_lua(d) -> str:
         wired = "true" if (not n.get("display_only") and (n.get("grants") or n.get("mechanic"))) else "false"
         tips = n.get("tooltip") or []
         tip_lua = "{ " + ", ".join(_lua_str(t) for t in tips) + " }"
+        german_name = locales.translate(n['name'], cls)
+        german_tips = "{ " + ", ".join(_lua_str(locales.translate(t, cls)) for t in tips) + " }"
+        localized_lua = ", localized={deDE={name=" + _lua_str(german_name) + ", tooltip=" + german_tips + "}}"
         # A spell-granting node emits a per-rank `grant` map (rank -> the FIRST spell it grants,
         # the primary castable). The addon's NodeTooltip renders that spell's REAL client tooltip
         # (native cost/range/cast/cooldown header + effect description) instead of the authored
@@ -291,7 +300,7 @@ def emit_lua(d) -> str:
             f"    {{ id={int(n['id'])}, tab={int(n['tab'])}, tier={int(n['tier'])}, "
             f"col={int(n['col'])}, name={_lua_str(n['name'])}, icon={_lua_str(n.get('icon',''))}, "
             f"maxRank={int(n['maxRank'])}, prereqTalent={int(n.get('prereqTalentId',0))}, "
-            f"prereqPoints={int(n.get('prereqPoints',0))}, wired={wired}, tooltip={tip_lua}{grant_lua} }},")
+            f"prereqPoints={int(n.get('prereqPoints',0))}, wired={wired}, tooltip={tip_lua}{grant_lua}{localized_lua} }},")
     L.append("  },")
     spell_mods = build_spell_mods(d)
     L.append("  spellMods = {")
@@ -314,6 +323,18 @@ def emit_lua(d) -> str:
         for name in sorted(ctb):
             L.append(f"    [{_lua_str(name)}] = {int(ctb[name])},")
         L.append("  },")
+    # Mechanic lookups keep their authored English keys. German spellbook titles
+    # resolve through this map without changing the cast-time calculation.
+    localized_names = {}
+    for name in sorted(set(spell_mods) | set(ctb)):
+        german = locales.translate(name, cls)
+        if german in localized_names and localized_names[german] != name:
+            raise ValueError(f"German spell-name collision: {german}")
+        localized_names[german] = name
+    L.append("  localizedSpellNames = { deDE = {")
+    for german, english in sorted(localized_names.items()):
+        L.append(f"    [{_lua_str(german)}] = {_lua_str(english)},")
+    L.append("  } },")
     L.append("}")
     return "\n".join(L) + "\n"
 
@@ -1743,7 +1764,7 @@ SENTINEL_SPELL_ID = 932999   # reserved top-of-band id for the generation-canary
 
 # Files whose bytes shape every emitted artifact: a change to ANY of them is a new
 # generation even with untouched YAMLs (Tasks 1-2 changed emitted SQL yaml-free).
-_STAMP_TOOL_FILES = ("gen_era_talents.py", "build_client_dbc.py",
+_STAMP_TOOL_FILES = ("gen_era_talents.py", "build_client_dbc.py", "era_locales.py",
                      "spell_dbc_columns.txt", "spell_dbc_coltypes.txt")
 
 
@@ -1766,6 +1787,10 @@ def generation_stamp(dataset_paths) -> str:
     h = hashlib.sha1()
     for name in _STAMP_TOOL_FILES:
         h.update((pathlib.Path(__file__).parent / name).read_bytes())
+    import era_locales as locales
+    for path in locales.catalog_files():
+        h.update(f"locales/deDE/{path.name}\n".encode())
+        h.update(path.read_bytes())
     for p in sorted(dataset_paths, key=lambda x: (pathlib.Path(x).parent.name, pathlib.Path(x).name)):
         pp = pathlib.Path(p)
         h.update(f"{pp.parent.name}/{pp.name}\n".encode())

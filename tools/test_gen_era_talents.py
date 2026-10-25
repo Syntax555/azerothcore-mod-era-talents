@@ -2034,7 +2034,7 @@ def test_sentinel_client_row(tmp_path):
     assert row[start:start + 16] == ["EraTalents Gen a1b2c3d4"] * 16
 
 
-def test_client_helpers_use_authored_text_in_all_locales(tmp_path):
+def test_client_helpers_use_authored_text_and_translated_german_rank(tmp_path):
     ds = _write_dataset(tmp_path, textwrap.dedent("""\
         - id: 932919
           name: Era Spell
@@ -2059,7 +2059,10 @@ def test_client_helpers_use_authored_text_in_all_locales(tmp_path):
                         ("Description_Lang", "Era cast description."),
                         ("AuraDescription_Lang", "Era aura description.")):
         start = G.COLS.index(group + "_enUS")
-        assert row[start:start + 16] == [text] * 16
+        expected = [text] * 16
+        if group == "NameSubtext_Lang":
+            expected[3] = "Rang 2"
+        assert row[start:start + 16] == expected
         assert row[G.COLS.index(group + "_Mask")] == 16712190
     assert tmpl == before
 

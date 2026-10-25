@@ -22,6 +22,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import gen_era_talents as G   # noqa: E402
+import era_locales as locales  # noqa: E402
 
 HEADER_FMT = "<4siiii"
 HEADER_SIZE = struct.calcsize(HEADER_FMT)
@@ -74,8 +75,8 @@ def _encode_record(values: list, pool: StringPool) -> bytes:
     return bytes(out)
 
 
-def _client_locale_fallbacks(values: list) -> list:
-    """Use the authored English text in every locale of a custom client row.
+def _client_locale_fallbacks(values: list, dataset: dict | None = None) -> list:
+    """Use authored translations with an English fallback in custom rows.
 
     Clients read their active locale directly; empty offsets hide the canary and
     custom spell names on localized clients. Cloned stock translations also must
@@ -87,6 +88,8 @@ def _client_locale_fallbacks(values: list) -> list:
         text = values[start]
         for locale in range(16):
             values[start + locale] = text
+        if dataset is not None:
+            values[start + 3] = locales.translate(text, int(dataset["class"]))
         values[_IDX[group + "_Mask"]] = 16712190 if text else 0
     return values
 
@@ -115,8 +118,10 @@ def _client_rows(dataset_paths: list[str], templates: dict) -> dict[int, list]:
                 over["NameSubtext_Lang_enUS"] = f"Rank {int(c['rank'])}"
                 over["NameSubtext_Lang_Mask"] = 16712190
             # A castable's spellbook tooltip is the DBC Description field (blank if unset).
-            if c.get("description"):
-                over["Description_Lang_enUS"] = c["description"]
+            # Never inherit a template's Wrath description for a custom helper.
+            # A triggered aura can reuse its authored era effect as prose; a
+            # name/icon-only helper has no description to invent or translate.
+            over["Description_Lang_enUS"] = c.get("description", c.get("auraDescription", "")) or ""
             # A BUFF/DEBUFF tooltip is the DBC AuraDescription field. A template clone inherits
             # the stock spell's (WotLK) aura text — the exact bug that made custom PI's buff
             # describe itself as haste PI — so an authored override is REQUIRED whenever the
@@ -141,7 +146,9 @@ def _client_rows(dataset_paths: list[str], templates: dict) -> dict[int, list]:
                         f"helper {h['id']}: template {tid} has a non-empty AuraDescription "
                         f"(the buff tooltip would show the stock WotLK text) — author "
                         f"client.auraDescription with the era-correct text")
-            rows[int(h["id"])] = _client_locale_fallbacks(G._row_values(over, tmpl))
+                # Non-aura helpers must not inherit unrelated aura text either.
+                over["AuraDescription_Lang_enUS"] = ""
+            rows[int(h["id"])] = _client_locale_fallbacks(G._row_values(over, tmpl), d)
     return rows
 
 
