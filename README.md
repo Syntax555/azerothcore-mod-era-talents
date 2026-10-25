@@ -14,7 +14,7 @@ Changes on `main`:
 - Keeps historical spells in their native spell groups and trains priest racial spells through their class quests.
 - Shows inspected bots' historical trees and lets owners train their controlled altbots.
 - Opens historical trees from DragonUI's talent window and keeps the inspect tree above the Inspect frame.
-- Sends each character's trainer list to DragonUI's spellbook and level-up notice, closes the glyph page before earned Wrath and shows MultiBot bot spellbooks as a DragonUI-style book.
+- Sends each character's trainer list to DragonUI's spellbook and level-up notice, closes the glyph page before earned Wrath and shows MultiBot bot spellbooks in DragonUI's own book, filled with the bot's spells and trainer list.
 
 The server pins a tested commit of `main` in its `versions.lock.json`. Upstream updates are merged into `main`; the original README follows.
 

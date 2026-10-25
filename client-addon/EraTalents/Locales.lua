@@ -44,8 +44,11 @@ local deDE = {
   ["Requires %s"] = "Benötigt %s",
   ["Skipped by the bot"] = "Vom Bot übersprungen",
   ["Left-click: cast. Right-click: macro."] = "Linksklick: wirken. Rechtsklick: Makro.",
-  ["Clear the box to make the bot skip it."] = "Entfernt das Häkchen, damit der Bot ihn auslässt.",
-  ["Training cost: %s"] = "Trainingskosten: %s",
+  ["Shift-click: the bot skips it."] = "Umschalt-Klick: der Bot lässt ihn aus.",
+  ["Training Cost"] = "Trainingskosten",
+  ["No spells match your search"] = "Keine Zauber entsprechen deiner Suche",
+  ["Show single page"] = "Einzelne Seite anzeigen",
+  ["Show second page"] = "Zweite Seite anzeigen",
   ["Page %d/%d"] = "Seite %d/%d",
   ["Blood"] = "Blut", ["Unholy"] = "Unheilig",
 }
