@@ -10,6 +10,7 @@ ET.state = { era = nil, availPts = 0, ranks = {}, isEraChar = false }
 function ET.Init()
   if ET._inited then return end
   ET._inited = true
+  if ET.InitDragonUIBook then ET.InitDragonUIBook() end
   if ET.InitComms then ET.InitComms() end
   if ET.InitUI then ET.InitUI() end
   if ET.InitHook then ET.InitHook() end

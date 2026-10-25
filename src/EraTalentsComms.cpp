@@ -11,6 +11,7 @@
 #include "EraTalentIP.h"
 #include "EraTalents.h"
 #include "EraTalentsConfig.h"
+#include "EraTrainerBook.h"
 #include "EraTransition.h"
 #include "ObjectAccessor.h"
 #include "ObjectDefines.h"  // INSPECT_DISTANCE
@@ -244,6 +245,57 @@ namespace EraTalentsComms
     }
 }
 
+// BOOK <guidHex> asks for the trainer spells of the requester or of a bot in its group. The reply is
+// "BOOK <guidHex> <classId> [<seq>/<total>] <record,...>", for the requester followed by "RIDING
+// <guidHex> [<seq>/<total>] <record,...>"; a denial is "BOOK <guidHex> 0", so the client never waits.
+// A record is "level:spellId:cost:previousRank:talent:required:tree" as EraTrainerBook::Entry holds it.
+namespace
+{
+    // The requester, or a bot in its group whose spellbook MultiBot shows. A book holds only what
+    // that character's own trainers would list for it.
+    Player* BookSubject(Player* requester, ObjectGuid const& guid)
+    {
+        if (guid == requester->GetGUID())
+            return requester;
+#ifdef MOD_PLAYERBOTS
+        Player* target = ObjectAccessor::FindPlayer(guid);
+        if (target && GET_PLAYERBOT_AI(target) && requester->GetGroup() && target->GetGroup() == requester->GetGroup())
+            return target;
+#endif
+        return nullptr;
+    }
+
+    std::string BookList(std::vector<EraTrainerBook::Entry> const& book)
+    {
+        std::string list;
+        for (EraTrainerBook::Entry const& entry : book)
+            list += std::to_string(entry.level) + ":" + std::to_string(entry.spellId) + ":" + std::to_string(entry.cost) +
+                    ":" + std::to_string(entry.previousRank) + ":" + std::to_string(entry.talent) + ":" +
+                    std::to_string(entry.required) + ":" + std::to_string(uint32(entry.tree)) + ",";
+        if (!list.empty())
+            list.pop_back();
+        return list;
+    }
+
+    std::vector<std::string> BuildBook(Player* requester, std::string const& token)
+    {
+        std::string const echo = token.substr(0, kMaxGuidToken);
+        ObjectGuid guid;
+        Player* subject = ParseGuidToken(token, guid) ? BookSubject(requester, guid) : nullptr;
+        if (!subject)
+            return { "BOOK " + echo + " 0" };
+
+        std::vector<std::string> bodies =
+            ChunkRankList("BOOK " + echo + " " + std::to_string(uint32(subject->getClass())) + " ",
+                          BookList(EraTrainerBook::ClassBook(subject)));
+        // Riding levels are the level-up notice's; a bot's spellbook has no use for them.
+        if (subject == requester)
+            for (std::string& body : ChunkRankList("RIDING " + echo + " ", BookList(EraTrainerBook::RidingBook(subject))))
+                bodies.push_back(std::move(body));
+        return bodies;
+    }
+}
+
 class era_talents_comms : public PlayerScript
 {
 public:
@@ -275,6 +327,14 @@ public:
         else if (verb == "HELLO")
         {
             // no-op: just resync below -- the addon sends HELLO on login/reload to pull state.
+        }
+        else if (verb == "BOOK")
+        {
+            std::string token;
+            iss >> token;
+            for (std::string const& body : BuildBook(p, token))
+                p->Whisper(std::string("ERATAL\t") + body, LANG_ADDON, p);
+            return;
         }
         else if (verb == "INSPECT")
         {

@@ -66,6 +66,45 @@ function ET.ParseInspectSync(cache, message)
   return guid
 end
 
+-- Trainer books by GUID: `class[guid]` = { classId, records, partial } from BOOK (a denial has
+-- classId 0) and `riding[guid]` = { records, partial } from RIDING. A record has DragonUI's trainer
+-- shape {level, spellID, cost, previousRank, talent, raceMask, required, tree}; the server already
+-- applied the character's race, so raceMask is 0. Chunks follow the ISYNC rules.
+ET.books = ET.books or { class = {}, riding = {} }
+ET.bookHandlers = ET.bookHandlers or {}
+ET.syncHandlers = ET.syncHandlers or {}
+
+local function ParseBookChunk(store, guid, rest, entry)
+  local seq, total, tail = string.match(rest, "^(%d+)/(%d+)%s*(.*)$")
+  if seq then rest = tail end
+  if seq and tonumber(seq) > 1 then
+    entry = store[guid]
+    if not (entry and entry.partial) then return false end   -- orphan continuation: ignore
+  else
+    entry.records = {}
+    store[guid] = entry
+  end
+  entry.partial = seq ~= nil and tonumber(seq) < tonumber(total)
+  for level, spell, cost, previous, talent, required, tree in
+      string.gmatch(rest, "(%d+):(%d+):(%d+):(%d+):(%d+):(%d+):(%d+)") do
+    entry.records[#entry.records + 1] = { tonumber(level), tonumber(spell), tonumber(cost), tonumber(previous),
+                                          tonumber(talent), 0, tonumber(required), tonumber(tree) }
+  end
+  return not entry.partial
+end
+
+-- Returns the guid, "class" or "riding", and whether that book is complete; nil for other messages.
+function ET.ParseBook(books, message)
+  local guid, classId, rest = string.match(message, "^BOOK%s+(%S+)%s+(%d+)%s*(.*)$")
+  if guid then
+    return guid, "class", ParseBookChunk(books.class, guid, rest, { classId = tonumber(classId) })
+  end
+  guid, rest = string.match(message, "^RIDING%s+(%S+)%s*(.*)$")
+  if guid then return guid, "riding", ParseBookChunk(books.riding, guid, rest, {}) end
+  return nil
+end
+function ET.RequestBook(guid) ET.Send("BOOK " .. guid) end
+
 -- Generation canary. The server sends "GEN <stamp>" (from era_talent_meta) after every SYNC;
 -- the installed client patch carries the same stamp in sentinel spell 932999's NAME
 -- ("EraTalents Gen <stamp>"). A mismatch means the player's Data/patch-V.mpq is a different
@@ -114,8 +153,16 @@ function ET.OnAddonMsg(prefix, message)
     end
     return
   end
+  local bguid, kind, complete = ET.ParseBook(ET.books, message)
+  if bguid then
+    if complete then
+      for _, handler in ipairs(ET.bookHandlers) do handler(bguid, kind) end
+    end
+    return
+  end
   if ET.ParseSync(ET.state, message) then
     if ET.Refresh then ET.Refresh() end   -- TalentUI hook (may be absent in tests)
+    for _, handler in ipairs(ET.syncHandlers) do handler() end
   end
 end
 

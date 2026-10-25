@@ -25,6 +25,7 @@ data\generated\MageTBC.lua
 Locales.lua
 EraTalents.lua
 Comms.lua
+DragonUIBook.lua
 Tooltip.lua
 TalentUI.lua
 Hook.lua
