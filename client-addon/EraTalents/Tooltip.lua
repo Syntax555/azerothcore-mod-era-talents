@@ -23,6 +23,7 @@
 -- (ET.InitTooltips) and ApplyToTooltip touch WoW only inside functions.
 EraTalents = EraTalents or {}
 local ET = EraTalents
+local L = ET.L
 
 -- ---------------------------------------------------------------------------
 -- Pure helpers (headless-testable: client-addon/tests/test_tooltip.lua).
@@ -57,7 +58,7 @@ function ET.FormatSecs(secs)
   local whole = math.floor(tenths / 10)
   local frac = tenths - whole * 10
   if frac == 0 then return tostring(whole) end
-  return whole .. "." .. frac
+  return whole .. (ET.locale == "deDE" and "," or ".") .. frac
 end
 
 -- Era base-cast override (generated castTimeBase). It does NOT read the base out of the line — the
@@ -65,10 +66,34 @@ end
 -- both an "Instant..." line and a "X sec cast" line (idempotent re-fires).
 function ET.RewriteCastBase(text, baseMs, flat, pct)
   if not text then return nil end
-  if not (string.match(text, "^([%d%.]+)%s+sec cast$") or string.match(text, "^Instant")) then return nil end
+  -- Use the client's own localized cast-time templates where available. English
+  -- lines remain recognized because an untranslated custom row can fall back to them.
+  local instant = SPELL_CAST_TIME_INSTANT or L["Instant"]
+  local isCast = string.match(text, "^([%d%.]+)%s+sec cast$") or
+                 string.match(text, "^Instant") or text == instant
+  if SPELL_CAST_TIME_SEC then
+    local first, last = string.find(SPELL_CAST_TIME_SEC, "%%[%d%.]*[fgds]")
+    if first then
+      local function EscapePattern(value)
+        return (value:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1"))
+      end
+      local pattern = "^" .. EscapePattern(string.sub(SPELL_CAST_TIME_SEC, 1, first - 1)) ..
+                      "[%d%.,]+" .. EscapePattern(string.sub(SPELL_CAST_TIME_SEC, last + 1)) .. "$"
+      isCast = isCast or string.match(text, pattern)
+    end
+  elseif ET.locale == "deDE" then
+    isCast = isCast or string.match(text, "^[%d%.,]+ Sek%. Zauberzeit$")
+  end
+  if not isCast then return nil end
   local newSecs = (baseMs / 1000) * (pct or 1) + (flat or 0) / 1000
-  if newSecs <= 0 then return "Instant" end
-  return ET.FormatSecs(newSecs) .. " sec cast"
+  if newSecs <= 0 then return instant end
+  if SPELL_CAST_TIME_SEC then
+    local rounded = math.floor(newSecs * 10 + 0.5) / 10
+    local formatted = string.format(SPELL_CAST_TIME_SEC, rounded)
+    if ET.locale == "deDE" then formatted = formatted:gsub("(%d)%.(%d)", "%1,%2") end
+    return formatted
+  end
+  return string.format(L["%s sec cast"], ET.FormatSecs(newSecs))
 end
 
 -- ---------------------------------------------------------------------------
@@ -92,6 +117,8 @@ function ET.ApplyToTooltip(tooltip)
   if not name then return end
   local titleFS = _G[name .. "TextLeft1"]
   local spellName = titleFS and titleFS:GetText()
+  local localizedNames = tree.localizedSpellNames and tree.localizedSpellNames[ET.locale]
+  spellName = localizedNames and localizedNames[spellName] or spellName
   local baseMs = spellName and tree.castTimeBase and tree.castTimeBase[spellName]
   if not baseMs then return end
 

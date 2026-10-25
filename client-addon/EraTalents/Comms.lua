@@ -2,6 +2,7 @@
 -- No WoW API calls at file scope (so this file loads under a headless lua5.1 test).
 EraTalents = EraTalents or {}
 local ET = EraTalents
+local L = ET.L
 
 -- Inspect state: `current` = the GUID string the stock Inspect frame is showing (set by Inspect.lua),
 -- `cache[guid]` = { era, managed, classId, ranks } from ISYNC. Wiped when the Inspect frame closes.
@@ -77,9 +78,8 @@ function ET.CheckGeneration(serverStamp)
   ET.state.clientGen = clientStamp
   if clientStamp ~= serverStamp then
     local msg = string.format(
-      "|cffff2020EraTalents: your client patch is generation %s but the server is %s. " ..
-      "Replace Data/patch-V.mpq with the current one and restart the game.|r",
-      clientStamp or "MISSING", serverStamp)
+      L["|cffff2020EraTalents: your client patch is generation %s but the server is %s. Replace Data/patch-V.mpq with the current one and restart the game.|r"],
+      clientStamp or L["MISSING"], serverStamp)
     if DEFAULT_CHAT_FRAME then DEFAULT_CHAT_FRAME:AddMessage(msg) end
   end
 end

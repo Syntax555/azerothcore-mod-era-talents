@@ -1,6 +1,7 @@
 ## Interface: 30300
 ## Title: EraTalents
 ## Notes: Era-authentic talent panel for era-wow characters
+## Notes-deDE: Epochengetreue Talentbäume für Era-Charaktere
 ## Author: era-wow
 ## Version: 0.1
 data\generated\MageVanilla.lua
@@ -21,6 +22,7 @@ data\generated\PriestTBC.lua
 data\generated\HunterTBC.lua
 data\generated\WarlockTBC.lua
 data\generated\MageTBC.lua
+Locales.lua
 EraTalents.lua
 Comms.lua
 Tooltip.lua

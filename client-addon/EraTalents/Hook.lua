@@ -4,6 +4,7 @@
 -- micro-button on 3.3.5a (only the keybind routed through it).
 EraTalents = EraTalents or {}
 local ET = EraTalents
+local L = ET.L
 
 local function GuardStockFrame()
   if not PlayerTalentFrame or PlayerTalentFrame._eraGuarded then return end
@@ -86,7 +87,7 @@ end
 -- before we Show; ShowUIPanel fires OnShow synchronously too, so the spec tabs are populated.
 function ET.OpenStockTalents()
   if not UnitExists("pet") then
-    DEFAULT_CHAT_FRAME:AddMessage("|cffffd000EraTalents:|r summon a pet to view its talent tree.")
+    DEFAULT_CHAT_FRAME:AddMessage(L["|cffffd000EraTalents:|r summon a pet to view its talent tree."])
     return
   end
   ET._allowStock = true

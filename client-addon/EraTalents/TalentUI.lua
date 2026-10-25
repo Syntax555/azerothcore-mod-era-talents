@@ -10,6 +10,7 @@
 -- tooltips, no local rank mutation, frame global "EraTalentFrame", _classId=8) is preserved.
 EraTalents = EraTalents or {}
 local ET = EraTalents
+local L = ET.L
 
 -- ---------------------------------------------------------------------------
 -- Layout constants (from the real FrameXML).
@@ -176,7 +177,7 @@ local function BuildChrome(v)
 
   f.title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   f.title:SetPoint("TOP", 0, -18)
-  f.title:SetText("Talents")
+  f.title:SetText(L["Talents"])
 
   -- Close button: real anchor (CENTER relative to TOPRIGHT, offset -44,-25).
   local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
@@ -187,9 +188,9 @@ local function BuildChrome(v)
   -- no route to it. This reopens the stock frame on demand (ET.OpenStockTalents bypasses the era
   -- guard once); click the Pet side-tab there. Visibility is re-asserted in ET.Refresh.
   f.petTalents = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-  f.petTalents:SetWidth(82); f.petTalents:SetHeight(20)
+  f.petTalents:SetWidth(ET.locale == "deDE" and 125 or 82); f.petTalents:SetHeight(20)
   f.petTalents:SetPoint("TOPRIGHT", f, "TOPRIGHT", -34, -44)   -- top-right slot (was the dev Reset button's)
-  f.petTalents:SetText("Pet Talents")
+  f.petTalents:SetText(L["Pet Talents"])
   f.petTalents:SetScript("OnClick", function() if ET.OpenStockTalents then ET.OpenStockTalents() end end)
   if ET._classId ~= 3 then f.petTalents:Hide() end
 end
@@ -348,21 +349,21 @@ local function NodeTooltip(btn)
   local gid = node.grant and (node.grant[(rank > 0) and rank or 1] or node.grant[1])
   if gid and tonumber(gid) and tonumber(gid) >= 920000 then
     GameTooltip:SetHyperlink("spell:" .. gid)
-    GameTooltip:AddLine("Rank " .. rank .. "/" .. node.maxRank, 0.8, 0.8, 0.8)
+    GameTooltip:AddLine(string.format(L["Rank %d/%d"], rank, node.maxRank), 0.8, 0.8, 0.8)
     GameTooltip:Show()
     return
   end
 
   -- Passive/modifier talents (spellmods, stats, procs) keep the authored per-rank effect prose.
-  GameTooltip:SetText(node.name, 1, 1, 1)
-  GameTooltip:AddLine("Rank " .. rank .. "/" .. node.maxRank, 0.8, 0.8, 0.8)
+  GameTooltip:SetText(ET.LocalizedField(node, "name"), 1, 1, 1)
+  GameTooltip:AddLine(string.format(L["Rank %d/%d"], rank, node.maxRank), 0.8, 0.8, 0.8)
   local shown = (rank > 0) and rank or 1
-  GameTooltip:AddLine(node.tooltip[shown] or "", 1, 0.82, 0, true)
+  GameTooltip:AddLine(ET.LocalizedField(node, "tooltip", shown) or "", 1, 0.82, 0, true)
   -- Read-only (inspect) views show the current rank only: no "Next rank", nothing to learn.
   if not v.readOnly and rank < node.maxRank then
     GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("Next rank:", 0.6, 0.6, 0.6)
-    GameTooltip:AddLine(node.tooltip[rank + 1] or "", 0.3, 1, 0.3, true)
+    GameTooltip:AddLine(L["Next rank:"], 0.6, 0.6, 0.6)
+    GameTooltip:AddLine(ET.LocalizedField(node, "tooltip", rank + 1) or "", 0.3, 1, 0.3, true)
   end
   GameTooltip:Show()
 end
@@ -377,7 +378,7 @@ local function OnNodeClick(btn)
   local rank = v.state.ranks[node.id] or 0
   if rank >= node.maxRank then return end
   if (v.state.availPts or 0) < 1 then
-    UIErrorsFrame:AddMessage("Not enough talent points.", 1, 0.2, 0.2, 1, 3)
+    UIErrorsFrame:AddMessage(L["Not enough talent points."], 1, 0.2, 0.2, 1, 3)
     return
   end
   ET.Learn(node.id)     -- server validates; UI updates when the SYNC arrives
@@ -558,12 +559,12 @@ end
 local function UpdateFooter(v, tree)
   local f = v.frame
   local pts = ET.SpecPoints(tree, v.state.ranks)
-  local tabName = (tree.tabs[v.activeTab] and tree.tabs[v.activeTab].name) or "Talents"
-  f.footerSpent:SetText(tabName .. " Talents: " .. (pts[v.activeTab] or 0))
+  local tabName = ET.TabName(tree.tabs[v.activeTab])
+  f.footerSpent:SetText(string.format(L["%s Talents: %d"], tabName, pts[v.activeTab] or 0))
   if v.readOnly then
     f.footerUnspent:SetText(pts[1] .. "/" .. pts[2] .. "/" .. pts[3])
   else
-    f.footerUnspent:SetText("Unspent Talents: " .. (v.state.availPts or 0))
+    f.footerUnspent:SetText(string.format(L["Unspent Talents: %d"], v.state.availPts or 0))
   end
 end
 
@@ -578,7 +579,7 @@ function ET.ShowViewTab(v, i)
   for t = 1, 3 do
     local tab = f.tabs[t]
     if tab and tree.tabs[t] then
-      tab:SetText(tree.tabs[t].name)
+      tab:SetText(ET.TabName(tree.tabs[t]))
       PanelTemplates_TabResize(tab, v.tabPad)
     end
   end

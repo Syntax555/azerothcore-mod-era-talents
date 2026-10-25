@@ -24,6 +24,7 @@ end
 
 hooksecurefunc = function() end   -- InitTooltips must be a no-op at load
 
+dofile("client-addon/EraTalents/Locales.lua")
 dofile("client-addon/EraTalents/Tooltip.lua")
 local ET = EraTalents
 
