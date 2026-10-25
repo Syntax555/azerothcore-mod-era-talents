@@ -1,11 +1,12 @@
--- ERATAL protocol: receive SYNC (replace-per-message) + ISYNC (inspect replies), send HELLO / LEARN / INSPECT.
+-- ERATAL protocol: own SYNC/LEARN, inspected ISYNC/IEDIT/ILEARN, and HELLO/INSPECT requests.
 -- No WoW API calls at file scope (so this file loads under a headless lua5.1 test).
 EraTalents = EraTalents or {}
 local ET = EraTalents
 local L = ET.L
 
 -- Inspect state: `current` = the GUID string the stock Inspect frame is showing (set by Inspect.lua),
--- `cache[guid]` = { era, managed, classId, ranks } from ISYNC. Wiped when the Inspect frame closes.
+-- `cache[guid]` = { era, managed, classId, ranks } from ISYNC, then { editable, availPts } from
+-- IEDIT. Wiped when the Inspect frame closes.
 ET.inspect = ET.inspect or { current = nil, cache = {} }
 
 -- Parse "SYNC <era> <managed> <availPts> [<seq>/<total>] <id:rank,...>". A <seq>/<total>
@@ -82,6 +83,7 @@ function ET.CheckGeneration(serverStamp)
       clientStamp or L["MISSING"], serverStamp)
     if DEFAULT_CHAT_FRAME then DEFAULT_CHAT_FRAME:AddMessage(msg) end
   end
+  if ET.RefreshInspect then ET.RefreshInspect() end
 end
 
 function ET.OnAddonMsg(prefix, message)
@@ -89,6 +91,16 @@ function ET.OnAddonMsg(prefix, message)
   local gen = string.match(message, "^GEN%s+(%x+)$")
   if gen then
     ET.CheckGeneration(gen)
+    return
+  end
+  local eguid, editable, points = string.match(message, "^IEDIT%s+(%S+)%s+([01])%s+(%-?%d+)$")
+  if eguid then
+    local e = eguid == ET.inspect.current and ET.inspect.cache[eguid]
+    if e then
+      e.editable = editable == "1"
+      e.availPts = tonumber(points)
+      if ET.RefreshInspect then ET.RefreshInspect() end
+    end
     return
   end
   local iguid = string.match(message, "^ISYNC%s+(%S+)")
@@ -110,9 +122,17 @@ end
 function ET.Send(payload)
   SendAddonMessage(ET.PREFIX, payload, "WHISPER", UnitName("player"))
 end
-function ET.RequestSync() ET.Send("HELLO") end
+function ET.RequestSync() ET.helloSentAt = GetTime(); ET.Send("HELLO") end
 function ET.Learn(id) ET.Send("LEARN " .. id) end
 function ET.RequestInspect(guid) ET.Send("INSPECT " .. guid) end
+function ET.LearnInspect(guid, id)
+  local e = guid == ET.inspect.current and ET.inspect.cache[guid]
+  if not e or not e.editable then return end
+  -- Wait for fresh server permission and ranks before accepting another click.
+  e.editable = false
+  if ET.RefreshInspect then ET.RefreshInspect() end
+  ET.Send("ILEARN " .. guid .. " " .. id)
+end
 
 function ET.InitComms()
   local f = CreateFrame("Frame")

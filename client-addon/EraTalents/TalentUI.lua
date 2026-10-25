@@ -374,14 +374,14 @@ end
 -- nodes get wired server-side they start responding without any addon change.
 local function OnNodeClick(btn)
   local v, node = btn.view, btn.node
-  if v.readOnly then return end   -- inspect view: never learns
+  if v.readOnly then return end
   local rank = v.state.ranks[node.id] or 0
   if rank >= node.maxRank then return end
   if (v.state.availPts or 0) < 1 then
     UIErrorsFrame:AddMessage(L["Not enough talent points."], 1, 0.2, 0.2, 1, 3)
     return
   end
-  ET.Learn(node.id)     -- server validates; UI updates when the SYNC arrives
+  if v.guid then ET.LearnInspect(v.guid, node.id) else ET.Learn(node.id) end
 end
 
 local function EnsureButtons(v, tree)

@@ -5,6 +5,12 @@ ET.locale = (GetLocale and GetLocale()) or "enUS"
 
 local deDE = {
   ["Talents"] = "Talente",
+  ["Loading talent data..."] = "Talentdaten werden geladen...",
+  ["Waiting for server talent data..."] = "Warten auf Talentdaten des Servers...",
+  ["Install the matching EraTalents client patch and restart the game."] =
+    "Installiert den passenden EraTalents-Client-Patch und startet das Spiel neu.",
+  ["Install the matching EraTalents addon and reload the interface."] =
+    "Installiert das passende EraTalents-Add-on und ladet die Oberfläche neu.",
   ["Pet Talents"] = "Begleitertalente",
   ["Rank %d/%d"] = "Rang %d/%d",
   ["Next rank:"] = "Nächster Rang:",

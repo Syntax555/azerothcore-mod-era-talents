@@ -18,13 +18,18 @@
 #include "ScriptMgr.h"
 #include "SharedDefines.h"
 #include "World.h"  // sWorld->getBoolConfig(CONFIG_TALENTS_INSPECTING)
+#ifdef MOD_PLAYERBOTS
+#include "Playerbots.h"
+#endif
 
 // ERATAL addon protocol.
 //
-// Client -> server verbs: HELLO (resync own state), LEARN <talentId>, INSPECT <guidHex>.
+// Client -> server verbs: HELLO (resync own state), LEARN <talentId>, INSPECT <guidHex>,
+//                         ILEARN <guidHex> <talentId> (one rank for a controlled group altbot).
 // Server -> client:       SYNC <era> <managed> <availPts> [<seq>/<total>] <id:rank,...>   (own state)
 //                         GEN <stamp>                                                     (after SYNC)
 //                         ISYNC <guidHex> <era> <managed> <classId> [<seq>/<total>] <id:rank,...>
+//                         IEDIT <guidHex> <editable> <availPts>                            (after ISYNC)
 // ISYNC answers INSPECT, ALWAYS (a denial is "ISYNC <guidHex> 0 0 0") so the client never waits.
 // It reveals no more than stock CMSG_INSPECT: same gates as WorldSession::HandleInspectOpcode.
 //
@@ -151,6 +156,38 @@ namespace
         return t;
     }
 
+    bool CanEditBotTalents(Player* requester, Player* target)
+    {
+        if (!requester || !target)
+            return false;
+#ifdef MOD_PLAYERBOTS
+        PlayerbotAI* ai = GET_PLAYERBOT_AI(target);
+        return ai && ai->IsAltBot() && ai->GetMaster() == requester && requester->GetGroup() &&
+               target->GetGroup() == requester->GetGroup();
+#else
+        return false;
+#endif
+    }
+
+    std::string BuildInspectEditSync(Player* requester, std::string const& token)
+    {
+        ObjectGuid guid;
+        Player* target = ParseGuidToken(token, guid) ? InspectTarget(requester, guid) : nullptr;
+        bool editable = CanEditBotTalents(requester, target);
+        int points = editable ? EraTalents::AvailablePoints(target, EraTransition::StoredEra(target)) : 0;
+        return "IEDIT " + token.substr(0, kMaxGuidToken) + " " + (editable ? "1" : "0") + " " + std::to_string(points);
+    }
+
+    bool LearnInspectTalent(Player* requester, std::string const& token, uint32 talentId)
+    {
+        ObjectGuid guid;
+        Player* target = ParseGuidToken(token, guid) ? InspectTarget(requester, guid) : nullptr;
+        if (!CanEditBotTalents(requester, target))
+            return false;
+        std::string err;
+        return EraTalents::TryLearn(target, talentId, err);
+    }
+
     // "ISYNC <guidHex> <era> <managed> <classId> [<seq>/<total>] <id:rank,...>". Any gate failure
     // -> the single denial body "ISYNC <guidHex> 0 0 0". The token is echoed (capped) so the
     // client can drop a reply for a target it has stopped inspecting.
@@ -172,6 +209,7 @@ namespace
     {
         for (std::string const& body : BuildInspectSync(requester, token))
             requester->Whisper(std::string("ERATAL\t") + body, LANG_ADDON, requester);
+        requester->Whisper(std::string("ERATAL\t") + BuildInspectEditSync(requester, token), LANG_ADDON, requester);
     }
 }
 
@@ -244,6 +282,17 @@ public:
             iss >> token;
             SendInspectSync(p, token);
             return;   // the requester's own state did not change -- no trailing SYNC
+        }
+        else if (verb == "ILEARN")
+        {
+            std::string token;
+            std::string extra;
+            uint32 talentId = 0;
+            iss >> token >> std::ws;
+            if (std::isdigit(iss.peek()) && (iss >> talentId) && !(iss >> extra))
+                LearnInspectTalent(p, token, talentId);
+            SendInspectSync(p, token);
+            return;
         }
         else
         {
