@@ -2030,7 +2030,48 @@ def test_sentinel_client_row(tmp_path):
     bcd = _bcd()
     row = bcd._sentinel_row("a1b2c3d4")
     assert row[G.COLS.index("ID")] == 932999
-    assert row[G.COLS.index("Name_Lang_enUS")] == "EraTalents Gen a1b2c3d4"
+    start = G.COLS.index("Name_Lang_enUS")
+    assert row[start:start + 16] == ["EraTalents Gen a1b2c3d4"] * 16
+
+
+def test_client_helpers_use_authored_text_in_all_locales(tmp_path):
+    ds = _write_dataset(tmp_path, textwrap.dedent("""\
+        - id: 932919
+          name: Era Spell
+          template: 35195
+          effects:
+          - {effect: 6, aura: 53, basePoints: 22, targetA: 6}
+          client:
+            name: Era Spell
+            icon: 152
+            rank: 2
+            description: Era cast description.
+            auraDescription: Era aura description.
+    """))
+    tmpl = _template_row(35195, "Stock aura description.")
+    for group in ("Name_Lang", "NameSubtext_Lang", "Description_Lang", "AuraDescription_Lang"):
+        start = G.COLS.index(group + "_enUS")
+        for locale in range(1, 16):
+            tmpl[start + locale] = "Stock translated Wrath text."
+    before = list(tmpl)
+    row = _bcd()._client_rows([ds], {35195: tmpl})[932919]
+    for group, text in (("Name_Lang", "Era Spell"), ("NameSubtext_Lang", "Rank 2"),
+                        ("Description_Lang", "Era cast description."),
+                        ("AuraDescription_Lang", "Era aura description.")):
+        start = G.COLS.index(group + "_enUS")
+        assert row[start:start + 16] == [text] * 16
+        assert row[G.COLS.index(group + "_Mask")] == 16712190
+    assert tmpl == before
+
+
+def test_client_locale_fallback_preserves_empty_descriptions():
+    bcd = _bcd()
+    row = G._row_values({"ID": 932919, "Name_Lang_enUS": "Era Spell"})
+    bcd._client_locale_fallbacks(row)
+    for group in ("NameSubtext_Lang", "Description_Lang", "AuraDescription_Lang"):
+        start = G.COLS.index(group + "_enUS")
+        assert row[start:start + 16] == [0] * 16
+        assert row[G.COLS.index(group + "_Mask")] == 0
 
 
 def test_lint_rejects_node_passive_at_sentinel_id():

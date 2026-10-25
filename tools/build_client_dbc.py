@@ -74,6 +74,23 @@ def _encode_record(values: list, pool: StringPool) -> bytes:
     return bytes(out)
 
 
+def _client_locale_fallbacks(values: list) -> list:
+    """Use the authored English text in every locale of a custom client row.
+
+    Clients read their active locale directly; empty offsets hide the canary and
+    custom spell names on localized clients. Cloned stock translations also must
+    not describe a Wrath effect when the authored helper has different era rules.
+    The base DBC rows are never passed through this function.
+    """
+    for group in ("Name_Lang", "NameSubtext_Lang", "Description_Lang", "AuraDescription_Lang"):
+        start = _IDX[group + "_enUS"]
+        text = values[start]
+        for locale in range(16):
+            values[start + locale] = text
+        values[_IDX[group + "_Mask"]] = 16712190 if text else 0
+    return values
+
+
 def _client_rows(dataset_paths: list[str], templates: dict) -> dict[int, list]:
     """id -> full 234-value row for every helper carrying a `client:` block, across datasets. A
     helper with a `template:` clones that real record (via the SAME clone-and-override path as the
@@ -124,7 +141,7 @@ def _client_rows(dataset_paths: list[str], templates: dict) -> dict[int, list]:
                         f"helper {h['id']}: template {tid} has a non-empty AuraDescription "
                         f"(the buff tooltip would show the stock WotLK text) — author "
                         f"client.auraDescription with the era-correct text")
-            rows[int(h["id"])] = G._row_values(over, tmpl)
+            rows[int(h["id"])] = _client_locale_fallbacks(G._row_values(over, tmpl))
     return rows
 
 
@@ -133,11 +150,11 @@ def _sentinel_row(stamp: str) -> list:
     stamp embedded in the NAME against the server-sent one (era_talent_meta). Passive + no
     effects: never castable, never in a spellbook; it exists only to smuggle the stamp into
     the client's Spell.dbc."""
-    return G._row_values({
+    return _client_locale_fallbacks(G._row_values({
         "ID": G.SENTINEL_SPELL_ID, "Attributes": G.PASSIVE_ATTR,
         "CastingTimeIndex": 1, "RangeIndex": 1, "SpellIconID": 1,
         "Name_Lang_enUS": f"EraTalents Gen {stamp}", "Name_Lang_Mask": 16712190,
-    })
+    }))
 
 
 def build(dataset_paths: list[str], base_dbc: pathlib.Path, out: pathlib.Path,
