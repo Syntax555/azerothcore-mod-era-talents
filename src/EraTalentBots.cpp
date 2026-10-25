@@ -1,10 +1,12 @@
 #include "EraTalentBots.h"
-#include "EraTalents.h"
-#include "EraTalentContent.h"
-#include "EraTalentsConfig.h"
+
 #include "EraGlyphGate.h"
-#include "Player.h"
+#include "EraTalentContent.h"
+#include "EraTalents.h"
+#include "EraTalentsConfig.h"
+#include "EraTransition.h"
 #include "Log.h"
+#include "Player.h"
 #ifdef MOD_PLAYERBOTS
 #include "Playerbots.h"          // GET_PLAYERBOT_AI — the bot test
 #include "PlayerbotFactory.h"    // native re-init on a band crossing (hard dep, like roster->IP)
@@ -12,9 +14,6 @@
 #include "SpellMgr.h"            // resolver: stock-name lookup + bot spell-map scan
 #include "SpellInfo.h"
 #include "Util.h"                // Utf8toWStr / wstrToLower / Utf8FitTo (SpellIdValue's pattern)
-#include "DatabaseEnv.h"         // trainer ReqLevel index (WorldDatabase, built once at startup)
-#include "QueryResult.h"         // DatabaseEnv.h only forward-declares ResultSet
-#include "Field.h"
 #include <algorithm>
 #include <array>
 #include <map>
@@ -22,7 +21,6 @@
 #include <string>
 #include <tuple>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 namespace EraTalentBots
@@ -32,25 +30,23 @@ namespace EraTalentBots
     // test, OnBotLogin would gate itself out at the exact moment it must run (era passive
     // reapply), and EraFor would misread a logging-in bot as a player (glyph gate stripped
     // WotLK-band bots' glyphs at login via EraFromIP==Vanilla).
-    // Public (declared in the header) since 2026-09-07: EraAdvanceGossip.cpp uses it too.
+    // A SelfBot also carries an AI, but a human plays it from a client, so it stays a player.
 #ifdef MOD_PLAYERBOTS
-    bool IsBot(Player* p) { return p && (p->GetSession()->IsBot() || GET_PLAYERBOT_AI(p) != nullptr); }
+bool IsBot(Player* p)
+{
+    return p && ((p->GetSession() && p->GetSession()->IsHeadless()) || (GET_PLAYERBOT_AI(p) && !IsSelfBot(p)));
+}
 #else
     bool IsBot(Player*) { return false; }   // no bot AI exists in this build
 #endif
 
     EraId BotEra(Player* bot)
     {
-        uint8 lvl = bot ? bot->GetLevel() : 80;
-        if (lvl <= 60) return ERA_VANILLA;
-        if (lvl <= 70) return ERA_TBC;
-        return ERA_WOTLK;
+        // Level is an earned talent-point budget, never proof of clearing an expansion.
+        return EraFromIP(bot);
     }
 
-    EraId EraFor(Player* p)
-    {
-        return IsBot(p) ? BotEra(p) : EraFromIP(p);
-    }
+    EraId EraFor(Player* p) { return EraFromIP(p); }
 
     bool IsEraManaged(Player* p)
     {
@@ -58,7 +54,7 @@ namespace EraTalentBots
             return false;
         if (IsBot(p) && !sEraTalentsConfig->BotTalents())
             return false;
-        return EraHasTalentTrees(EraFor(p));
+        return EraHasTalentTrees(p, EraFor(p)) || EraHasTalentTrees(p, EraTransition::StoredEra(p));
     }
 }
 
@@ -70,6 +66,13 @@ namespace
 
     // Every entry point bails here FIRST (module-hooks gotcha: guard before any deref).
     bool Gated(Player* p) { return !sEraTalentsConfig->Enabled() || !sEraTalentsConfig->BotTalents() || !IsBot(p); }
+
+    // Only generated characters on random-bot accounts allocate their own points. A human's
+    // character keeps them for its owner, also while it runs as an altbot.
+    bool SpendsOwnPoints(Player* bot)
+    {
+        return bot->GetSession() && sPlayerbotAIConfig.IsInRandomAccountList(bot->GetSession()->GetAccountId());
+    }
 
     // Spec-tab cache backing the patch-0020 AiFactory::GetPlayerSpecTabs bridge. That function
     // runs on per-second AI paths (raid triggers, chat formatting, gear scoring) while the era
@@ -100,120 +103,8 @@ namespace
         g_resolveCache.erase(bot->GetGUID());   // spellbook mutations track era-row mutations
     }
 
-    // ---------------------------------------------------------------------------------------
-    // Trainer ReqLevel index: SpellId -> MIN(trainer_spell.ReqLevel) over every trainer row,
-    // lowered to a learning item's RequiredLevel where a book teaches it earlier (see
-    // BuildTrainerLevelIndex — IP gates Vanilla book spells' trainer rows to 61/71).
-    //
-    // WHY THIS EXISTS (bracket DOWN-move residue, bots only). A bot moved DOWN a level bracket
-    // (mod-player-bot-level-brackets, or a `.character level` in testing) keeps every
-    // character_spell row it accumulated at the higher level, and nothing owned the stock ones:
-    //   * node-granted STOCK spells are covered by EraTalents::Reset (TeardownStale's first arm);
-    //   * everything in the era band [920000,950000) is covered by the Phase 9.5 band sweep
-    //     (EraBandClassifier) — and this index deliberately EXCLUDES band ids so the two can
-    //     never fight over the same spell (the "never removeSpell(<band id>)" invariant);
-    //   * a TRAINER-TAUGHT stock spell above the new band's level ceiling had NO owner at all.
-    // Measured case: stock Frostfire Bolt 42985 (trainer ReqLevel 77) still known by TBC-band
-    // (level 61-70) mage bots after an 80 -> 70 move, i.e. a bot casting a WotLK spell in a TBC
-    // band. Gear residue is a KNOWN, ACCEPTED gap (the factory re-gears on its own cadence and
-    // an ilvl sweep is a much bigger hammer) — this covers the spellbook only.
-    //
-    // Built ONCE at worldserver startup (EraTalentBots::BuildTrainerLevelIndex, called from the
-    // module's WorldScript::OnStartup) and READ-ONLY thereafter, so the map-thread readers need
-    // no lock — unlike the two mutable caches above, nothing ever writes it again.
-    std::unordered_map<uint32, uint32> g_trainerMinReqLevel;
-
-    // Companion index, built in the same startup pass: every STOCK spell id that some node in
-    // (era, class) grants, keyed (era << 8 | class). ~150 DISTINCT stock ids across era-data/
-    // are node grants (the boot canary prints the (era,class)-scoped tuple count instead: 504
-    // today), and a node grant is the era system's own property — it must NEVER be strippable by
-    // the trainer-level rule, whatever ReqLevel a trainer happens to carry for it. Ice Block 45438
-    // is the worked example: a Vanilla node-18046 grant that is ALSO trainer-taught at 30, so the
-    // trainer row's level never exceeded a Vanilla bot's and the rule missed it only by accident.
-    // This makes the exclusion STRUCTURAL instead of incidental. Band ids never reach here (the
-    // trainer index already drops them — the Phase 9.5 sweep owns those).
-    std::unordered_map<uint32, std::unordered_set<uint32>> g_eraNodeGrantStock;
-
-    inline uint32 EraClassKey(EraId era, uint8 classId) { return (uint32(era) << 8) | classId; }
-
-    bool IsEraNodeGrantedStock(EraId era, uint8 classId, uint32 spellId)
-    {
-        auto it = g_eraNodeGrantStock.find(EraClassKey(era, classId));
-        return it != g_eraNodeGrantStock.end() && it->second.count(spellId) != 0;
-    }
-
-    // Drop trainer-taught STOCK spells the bot's (possibly reduced) level can no longer justify.
-    // Deliberately unconditional rather than direction-detecting: a bot AT or ABOVE a spell's
-    // trainer level holds nothing that qualifies, so this is a pure no-op on an up-move / a normal
-    // level-up, and a down-move is the only case it can fire on.
-    //
-    // MEASURED 2026-09-06: PlayerbotFactory::InitAvailableSpells does NOT honour trainer ReqLevel,
-    // so it RE-TEACHES above-level spells on every walk — including the walk in the AI-tick action
-    // AutoMaintenanceOnLevelupAction::LearnTrainerSpells, which runs AFTER the whole factory pass.
-    // That is why this also hangs off the patch-0020 post-trainer-walk bridge and not only off
-    // TeardownStale: a TeardownStale-only version left 9 of Drimdinn's spells re-taught at 69.
-    void StripAboveLevelTrainerSpells(Player* bot)
-    {
-        if (!bot || g_trainerMinReqLevel.empty())
-            return;
-        uint8 const level = bot->GetLevel();
-        EraId const era = EraTalentBots::BotEra(bot);   // this arm is bots-only (Gated upstream)
-        uint8 const classId = bot->getClass();
-        std::vector<uint32> doomed;   // collect first — removeSpell mutates the map we are walking
-        for (auto const& [spellId, pSpell] : bot->GetSpellMap())
-        {
-            // Deliberately NOT filtered on `Active`. The criterion is "holds a character_spell
-            // row", and `active` is not even persisted (character_spell is guid/spell/specMask) —
-            // core recomputes it at load, marking a lower rank INACTIVE while a higher rank of the
-            // same chain is known. Draining a two-rank above-level chain in ONE pass needs both.
-            //
-            // WHAT THIS DOES *NOT* FIX, so nobody re-opens it: after the strip, above-level rows
-            // whose chain root is a TALENT spell REMAIN in character_spell with specMask 0 — core's
-            // removeSpell retains those rather than marking them REMOVED (the standing specMask-
-            // retention gotcha). Measured on Eragon at 70: 42890/42891 (Pyroblast r11/r12),
-            // 42944 (Blast Wave r8), 42949 (Dragon's Breath r5), 43038/43039 (Ice Barrier r7/r8),
-            // 55360 (Living Bomb r3) all sit at specMask 0. HasSpell is FALSE for every one of
-            // them, so the bot does not know or cast them — a raw character_spell row count is the
-            // wrong way to audit this; join on `specMask <> 0`.
-            if (!pSpell || pSpell->State == PLAYERSPELL_REMOVED)
-                continue;
-            auto it = g_trainerMinReqLevel.find(spellId);
-            if (it == g_trainerMinReqLevel.end() || it->second <= uint32(level))
-                continue;
-            if (IsEraNodeGrantedStock(era, classId, spellId))
-                continue;   // the era system owns it — never strippable by a trainer's ReqLevel
-            doomed.push_back(spellId);
-        }
-        for (uint32 spellId : doomed)
-            bot->removeSpell(spellId, SPEC_MASK_ALL, false);
-        if (!doomed.empty())
-            LOG_DEBUG("module", "[mod-era-talents] bot {} (level {}): stripped {} trainer-taught spell(s) above level",
-                bot->GetName(), uint32(level), uint32(doomed.size()));
-    }
-
-    // Strip rows + granted clones for every managed era the bot is NOT currently in, then drop
-    // trainer-taught STOCK spells the bot's (possibly reduced) level can no longer justify.
-    // Covers bracket up-moves and band crossings; a bot with no rows is a cheap no-op.
-    void TeardownStale(Player* bot, EraId current)
-    {
-        for (uint8 e = 0; e <= uint8(ERA_WOTLK); ++e)
-        {
-            EraId era = EraId(e);
-            if (era == current || !EraHasTalentTrees(era))
-                continue;
-            if (EraTalents::SpentPoints(bot, era) > 0)
-            {
-                EraTalents::Reset(bot, era);
-                InvalidateSpecTabs(bot);
-            }
-        }
-
-        StripAboveLevelTrainerSpells(bot);
-    }
-
-    // TBC faction DPS seals — the shared arm behind OnBotLevelChanged and the patch-0020
-    // post-trainer-walk bridge. The factory's trainer walk (InitAvailableSpells) is class-only
-    // gated, so a TBC-band paladin bot learns BOTH Seal of Blood (946080, Horde/BE) and Seal of
+    // TBC faction DPS seals, stripped on bot login and level changes. The factory's trainer walk
+    // (InitAvailableSpells) is class-only gated, so a TBC-band paladin bot learns BOTH Seal of Blood (946080, Horde/BE) and Seal of
     // Vengeance (946084, Alliance) every time it runs, AFTER the mid-build reconcile has already
     // stripped the wrong one. Readiness is the same question EraTalents.cpp's file-static
     // EraReplacementSpellReady asks (that helper is not exported): with TBC outside the
@@ -361,6 +252,33 @@ namespace
         { { ERA_TBC, CLASS_DRUID, 3 }, { 20121, 20122, 20128, 20127, 20126, 20129, 20130, 20131, 20132, 20133, 20135, 20136, 20138, 20139, 20140, 20141, 20123, 20124, 20125, 20143, 20144 } },
     };
 
+    // A fresh build follows the configured PvE spec mix (Playerbots.RandomClassSpecProb spec
+    // numbers 0-2 and the druid's cat 3, the authored orders). A GUID hash keeps the choice
+    // stable, so the next era's refunded tree is rebuilt as the same spec.
+    int SeedSpecTab(Player* bot)
+    {
+        uint8 const cls = bot->getClass();
+        int const specs = cls == CLASS_DRUID ? 4 : 3;
+        uint32 total = 0;
+        for (int spec = 0; spec < specs; ++spec)
+            total += sPlayerbotAIConfig.RandomClassSpecProb[cls][spec];
+        uint32 hash = bot->GetGUID().GetCounter();
+        hash = (hash ^ (hash >> 16)) * 0x7feb352du;
+        hash = (hash ^ (hash >> 15)) * 0x846ca68bu;
+        hash ^= hash >> 16;
+        if (!total)
+            return int(hash % 3);
+        uint32 point = hash % total;
+        for (int spec = 0; spec < specs; ++spec)
+        {
+            uint32 const weight = sPlayerbotAIConfig.RandomClassSpecProb[cls][spec];
+            if (point < weight)
+                return spec;
+            point -= weight;
+        }
+        return 0;
+    }
+
     // Learn one node to maxRank (TryLearn increments a single rank per call and enforces
     // era/class/prereq/budget — a bad order wastes points but cannot corrupt state).
     void LearnToMax(Player* bot, uint32 talentId)
@@ -430,7 +348,9 @@ namespace EraTalentBots
             return false;
 
         EraId era = BotEra(bot);
-        TeardownStale(bot, era);
+        EraTransition::Detect(bot);
+        if (EraTransition::StoredEra(bot) != era || bot->IsInCombat())
+            return true;
 
         // Randomize/bracket moves land here for every managed bot: enforce the glyph era
         // rule alongside the talent teardown (no-op for WotLK-band bots and DKs).
@@ -441,15 +361,30 @@ namespace EraTalentBots
         if (sEraTalentContent->NodesFor(uint8(era), bot->getClass()).empty())
             return false;                                            // DK-in-Vanilla guard
 
-        // Clean slate both sides, then spend. resetTalents(true) = no cost.
-        bot->resetTalents(true);
-        EraTalents::Reset(bot, era);
-        SpendBuild(bot, era, specTab);         // its BotBuildScope runs the post-build reconcile
-        InvalidateSpecTabs(bot);               // era rows changed -> spec-tab bridge re-reads
-        // NB: no trainer re-walk needed here — Randomize runs InitAvailableSpells a second
-        // time AFTER InitTalentsTree (PlayerbotFactory.cpp ~:708), so the era presence
-        // markers this reconcile just granted (932749 Vanilla / 946078 TBC seals, 932416 totems, ...) are seen
-        // by that walk and the marker-gated era chains get taught in the same pass.
+        // Extend the existing build. Routine refreshes never refund or reassign earned points.
+        EraTransition::StripNativeTalents(bot, era);
+        uint32 tabs3[3] = {0, 0, 0};
+        if (EraTalents::SpentPoints(bot, era) > 0 && EraTalentBots_SpecTabs(bot, tabs3))
+        {
+            specTab = 0;
+            for (int tab = 1; tab < 3; ++tab)
+                if (tabs3[tab] > tabs3[specTab])
+                    specTab = tab;
+            if (bot->getClass() == CLASS_DRUID && specTab == 1)
+            {
+                // Both feral orders open with Ferocity, so a seeded cat stays cat until it diverges.
+                uint32 catNode = era == ERA_VANILLA ? 18717 : 20122;
+                uint32 bearNode = era == ERA_VANILLA ? 18720 : 20125;
+                if (EraTalents::CurrentRank(bot, era, bearNode) == 0 &&
+                    (EraTalents::CurrentRank(bot, era, catNode) > 0 || SeedSpecTab(bot) == 3))
+                    specTab = 3;
+            }
+        }
+        if (EraTalents::AvailablePoints(bot, era) > 0 && SpendsOwnPoints(bot))
+            SpendBuild(bot, era, specTab);
+        else
+            EraTalents::ReconcileBaselineSpells(bot, era);
+        InvalidateSpecTabs(bot);
         bot->SetFreeTalentPoints(0);
         bot->SendTalentsInfoData(false);
         LOG_DEBUG("module", "[mod-era-talents] bot build: {} class {} tab{} {}pts",
@@ -461,119 +396,43 @@ namespace EraTalentBots
     {
         if (Gated(bot))
             return;
-        EraId era = BotEra(bot);
-        TeardownStale(bot, era);   // belt-and-braces; normally a no-op (levels can't change offline)
-        if (EraHasTalentTrees(era) && EraTalents::SpentPoints(bot, era) > 0)
+        EraTransition::Detect(bot);
+        EraId era = EraFor(bot);
+        if (EraTransition::StoredEra(bot) != era || bot->IsInCombat())
+            return;
+        if (EraHasTalentTrees(bot, era))
+        {
+            EraTransition::StripNativeTalents(bot, era);
             EraTalents::ReapplyOnLogin(bot, era);
-
-        // Run the per-class reconcile arms at login, exactly as the player login path does
-        // (EraTalentPin::OnPlayerLogin). ReapplyOnLogin only re-GRANTS clones from the persisted
-        // era_character_talent rows — it evaluates none of reconcile's grant-change strips,
-        // baseline gates or marker grants, so before this call a managed bot kept its stale stock
-        // spells until the next factory reconcile / level change. Measured 2026-09-03 (Task 8b),
-        // after a boot with the TBC-rogue Riposte rework: 7 Vanilla-band rogue bots still held
-        // stock Riposte 14251 (specMask 1) alongside the new era clone 932989, and 4 held stock
-        // 13750 with no clone; `.character level` on one cleared it instantly. That matters beyond
-        // cosmetics because EraTalentBots_ResolveSpellId's HasSpell fast path returns the STOCK id
-        // whenever the bot still knows it, so the AI casts the wrong-era spell.
-        //
-        // Ordering: after ReapplyOnLogin, so the era grants exist before the arms evaluate them
-        // (several arms are "strip X unless the era clone/rank is present").
-        //
-        // Cost: ONE direct call — deliberately NOT wrapped in BotBuildScope. That scope exists to
-        // collapse the ~40 per-TryLearn reconciles+writes of a factory BUILD into one; there are no
-        // TryLearn calls here, and its destructor would ADD a synchronous REPLACE INTO
-        // era_character_talent plus a second reconcile per login. Reconcile itself issues no DB
-        // query: it reads rank state only through CurrentRank, whose lazy per-(guid,era) SELECT was
-        // already spent by TeardownStale + the SpentPoints call above.
-        // UNCONDITIONAL, mirroring EraTalentPin.cpp:71 ("unconditional: must also run for WotLK
-        // priests") — an UNMANAGED (WotLK) band must still run the cross-era strips: hunter
-        // 948280/948281, the priest Prayer-of-Spirit chain 948029/948030, and the warlock stone
-        // markers are trainer-/reconcile-managed, so TeardownStale (which only resets node-granted
-        // era_character_talent ranks) never touches them. Measured 2026-09-04: a hunter bot moved
-        // 70->80 kept the TBC marker 948280 and the TBC Scorpid clone 948281 indefinitely, because
-        // both this call and FactoryReconcile bailed on !EraHasTalentTrees(WotLK).
-        // Costs no extra DB query in an unmanaged band: reconcile reaches CurrentRank only with
-        // ERA_VANILLA/ERA_TBC (whose per-(guid,era) caches TeardownStale's SpentPoints just seeded)
-        // and the band sweep (EraBandClassifier) resolves a WotLK character's held band ids against a
-        // NodesFor(ERA_WOTLK) owner set that is empty while no WotLK trees are authored.
-        //
-        // SIDE EFFECT, stated explicitly because it is a real behaviour change for WotLK-band bots:
-        // reaching reconcile in an unmanaged band ALSO hands them things they previously never got —
-        // the kBaselineSpellGates `era >= ERA_TBC` force-grants (Holy Nova r1, Shield Slam r1, Ice
-        // Block, Divine Spirit r1, Consecration r1) and the WotLK-era presence markers (932939
-        // warlock stones / 932417 shaman totems / 932305 hunter). That is the CORRECT WotLK state and
-        // is exactly what a real WotLK player already gets from EraTalentPin.cpp:71; bots were simply
-        // never reaching it. Cost is bounded: one learnSpell per missing spell per bot, ONCE, and it
-        // persists to character_spell — steady-state logins re-check with plain HasSpell probes and
-        // grant nothing.
-        EraTalents::ReconcileBaselineSpells(bot, era);
-
-        // TBC faction DPS seals (Task 5d): the factory trainer-walk (InitAvailableSpells) is
-        // class-only-gated, so a TBC-band paladin bot learns BOTH Seal of Blood + Seal of Vengeance
-        // during a randomize (after the mid-build reconcile has already run). This login-time strip
-        // removes the wrong-faction one in steady state (the saved character_spell is loaded before
-        // this hook fires). No-op for non-paladins / when the wrong seal isn't held.
-        if (era == ERA_TBC)
-            EraTalents::StripWrongFactionTbcPalSeal(bot);
+            FactoryReconcile(bot, SeedSpecTab(bot));
+        }
+        else
+            EraTalents::ReconcileBaselineSpells(bot, era);
+        StripTbcSealIfPaladin(bot, era);
     }
 
     void OnBotLevelChanged(Player* bot)
     {
         if (Gated(bot))
             return;
-        EraId era = BotEra(bot);
-
-        // Band crossing OUT of a managed era (60 -> 61): teardown, then hand the bot a fresh
-        // native template. InitTalentsTree re-picks the spec — acceptable for a random bot on
-        // a rare boundary event; the factory re-randomizes them periodically anyway.
-        bool hadStale = false;
-        for (uint8 e = 0; e <= uint8(ERA_WOTLK); ++e)
-            if (EraId(e) != era && EraHasTalentTrees(EraId(e)) && EraTalents::SpentPoints(bot, EraId(e)) > 0)
-                hadStale = true;
-        TeardownStale(bot, era);
-        InvalidateSpecTabs(bot);   // level changed (and possibly rows) -> bridge must re-read
-
-        // A move INTO an unmanaged (WotLK) band gets no reconcile from anywhere else: the
-        // InitTalentsTree branch below routes through FactoryReconcile, which returns early on
-        // !EraHasTalentTrees, and BotBuildScope's end-of-build reconcile only runs for managed
-        // bands. Same rationale (and same measured defect) as the unconditional call in
-        // OnBotLogin above; placed BEFORE the early return so both exits are covered. Managed
-        // bands are deliberately NOT reconciled here — SpendBuild's BotBuildScope already does it,
-        // and a second pass would be pure duplicate work.
-        if (!EraHasTalentTrees(era))
-            EraTalents::ReconcileBaselineSpells(bot, era);
-
-        if (hadStale && !EraHasTalentTrees(era))
-        {
-            PlayerbotFactory factory(bot, bot->GetLevel());
-            factory.InitTalentsTree(false, true, true);
-            // EVERY exit of this hook re-runs the TBC seal strip (I-3): a level change can land a
-            // paladin bot in the TBC band right after a factory pass has re-taught both faction
-            // seals, and the only other strip sites (OnBotLogin, mid-reconcile) both run BEFORE
-            // the trainer walk. A no-op for every non-TBC / non-paladin case.
-            StripTbcSealIfPaladin(bot, era);
+        EraTransition::Detect(bot);
+        EraId era = EraFor(bot);
+        if (EraTransition::StoredEra(bot) != era || bot->IsInCombat())
             return;
-        }
-
-        // Inside a managed band with an existing build: spend the newly-accrued point(s) in
-        // the same shape (deterministic spender + same tab = the same build, extended).
-        if (EraHasTalentTrees(era) && EraTalents::SpentPoints(bot, era) > 0
-            && EraTalents::AvailablePoints(bot, era) > 0)
+        InvalidateSpecTabs(bot);
+        if (EraHasTalentTrees(bot, era))
+            FactoryReconcile(bot, SeedSpecTab(bot));
+        else
         {
-            // Recover the build's tab from where the points already are (the spec-tab bridge
-            // shares exactly this computation, and its cache was just invalidated above).
-            uint32 tabs3[3] = { 0, 0, 0 };
-            int bestTab = 0;
-            if (EraTalentBots_SpecTabs(bot, tabs3))
-                for (int tab = 1; tab < 3; ++tab)
-                    if (tabs3[tab] > tabs3[bestTab])
-                        bestTab = tab;
-            SpendBuild(bot, era, bestTab);
-            InvalidateSpecTabs(bot);   // rows grew -> re-read on next AI query
+            // Native Wrath talents spend only the real level-earned remainder; never reset.
+            if (SpendsOwnPoints(bot))
+            {
+                PlayerbotFactory factory(bot, bot->GetLevel());
+                factory.InitTalentsTree(true, true, false);
+            }
+            EraTalents::ReconcileBaselineSpells(bot, era);
         }
-
-        StripTbcSealIfPaladin(bot, era);   // second (fall-through) exit — see the note above
+        StripTbcSealIfPaladin(bot, era);
     }
 
     void OnLogout(Player* p)
@@ -591,97 +450,12 @@ namespace EraTalentBots
                                  // spec-tab bridge serves era-managed PLAYERS too, so a learn
                                  // via the addon must not leave a stale cached distribution
     }
-
-    void BuildTrainerLevelIndex()
-    {
-        // ONE query at worldserver startup; read-only for the rest of the process (see the
-        // g_trainerMinReqLevel comment for why that means no lock). ReqLevel 0 rows carry no
-        // level information, and band ids are the sweep's business, never ours.
-        g_trainerMinReqLevel.clear();
-        if (QueryResult r = WorldDatabase.Query(
-                "SELECT SpellId, MIN(ReqLevel) FROM trainer_spell WHERE ReqLevel > 0 GROUP BY SpellId"))
-        {
-            do
-            {
-                Field* f = r->Fetch();
-                uint32 spellId = f[0].Get<uint32>();
-                if (spellId >= EraTalents::ERA_CUSTOM_BAND_LOW && spellId < EraTalents::ERA_CUSTOM_BAND_HIGH)
-                    continue;
-                g_trainerMinReqLevel[spellId] = f[1].Get<uint32>();
-            } while (r->NextRow());
-        }
-        // A trainer row is not the only way to learn a spell. Vanilla book spells (Prayer of
-        // Fortitude, Eviscerate r9, the AQ20 manuals...) are taught by a learning item (spellid_1
-        // 483 / 55884 teaches spellid_2), and IP's class_trainers.sql moves their trainer rows to
-        // 61/71 precisely BECAUSE they were book-only in that era. Trainer level alone therefore
-        // reads a level-60 bot's legitimately-read book as "above level" and strips it — live
-        // 2026-10-01 on a player's alt logged in as a bot (Prayer of Fortitude, Eviscerate r9 gone
-        // after every alt-bot login), and it undoes mod-raid-roster's LearnBookSpells on every
-        // roster bot. The real floor is the LOWER of the trainer and book levels; a book with no
-        // level requirement means no level can rule the spell out, so drop it from the index.
-        uint32 bookLowered = 0;
-        if (QueryResult r = WorldDatabase.Query(
-                "SELECT spellid_2, MIN(RequiredLevel) FROM item_template "
-                "WHERE spellid_1 IN (483, 55884) AND spellid_2 > 0 GROUP BY spellid_2"))
-        {
-            do
-            {
-                Field* f = r->Fetch();
-                auto it = g_trainerMinReqLevel.find(f[0].Get<uint32>());
-                uint32 bookLevel = f[1].Get<uint32>();
-                if (it == g_trainerMinReqLevel.end() || bookLevel >= it->second)
-                    continue;
-                if (bookLevel == 0)
-                    g_trainerMinReqLevel.erase(it);
-                else
-                    it->second = bookLevel;
-                ++bookLowered;
-            } while (r->NextRow());
-        }
-        // Companion pass, same startup call (content is already loaded — the loader runs
-        // sEraTalentContent->Load() first): every STOCK id any (era, class) node grants. Read-only
-        // afterwards, same no-lock argument as the trainer index above.
-        g_eraNodeGrantStock.clear();
-        uint32 stockGrants = 0;
-        for (uint8 e = 0; e <= uint8(ERA_WOTLK); ++e)
-            for (uint8 c = CLASS_WARRIOR; c <= CLASS_DRUID; ++c)
-                for (const EraTalentNode* n : sEraTalentContent->NodesFor(e, c))
-                    for (uint32 grant : n->rankSpell)
-                    {
-                        if (!grant || (grant >= EraTalents::ERA_CUSTOM_BAND_LOW && grant < EraTalents::ERA_CUSTOM_BAND_HIGH))
-                            continue;   // display-only rank, or a band id the sweep owns
-                        if (g_eraNodeGrantStock[EraClassKey(EraId(e), c)].insert(grant).second)
-                            ++stockGrants;
-                    }
-
-        LOG_INFO("module", "[mod-era-talents] trainer level map: {} stock spell(s) indexed by min trainer ReqLevel ({} lowered to a learning item's RequiredLevel), {} node-granted stock id(s) excluded across {} (era,class) set(s)",
-            uint32(g_trainerMinReqLevel.size()), bookLowered, stockGrants, uint32(g_eraNodeGrantStock.size()));
-    }
 }
 
 // Bridges for fork patch 0020 — signatures must match the extern declarations in the patch.
 bool EraTalentBots_FactoryReconcile(Player* bot, int specTab)
 {
     return EraTalentBots::FactoryReconcile(bot, specTab);
-}
-
-void EraTalentBots_PostTrainerWalk(Player* bot)
-{
-    // Called from patch 0020 right after each InitAvailableSpells() trainer walk — THREE sites,
-    // and the third is the load-bearing one (measured 2026-09-06): PlayerbotFactory::Randomize
-    // step 2, PlayerbotFactory::Refresh, and AutoMaintenanceOnLevelupAction::LearnTrainerSpells,
-    // an AI-TICK action that runs after the entire factory pass has finished. Fixing only the two
-    // factory sites left both faction seals and 9 above-level trainer spells on a re-levelled
-    // paladin bot, because the maintenance action re-taught them afterwards.
-    //
-    // The walk is CLASS-only gated (no faction, no trainer ReqLevel), so it re-teaches (a) BOTH
-    // TBC paladin faction seals and (b) trainer spells above the bot's level. Both arms are the
-    // same ones TeardownStale runs; this is where they get the last word. Keep this cheap — it is
-    // on a per-bot factory/AI path — and keep every arm bail-gated before any deref.
-    if (Gated(bot))
-        return;
-    StripAboveLevelTrainerSpells(bot);                        // any band, incl. WotLK
-    StripTbcSealIfPaladin(bot, EraTalentBots::EraFor(bot));   // self-gates on era TBC + readiness
 }
 
 bool EraTalentBots_SpecTabs(Player* p, uint32* tabs3)
@@ -694,7 +468,7 @@ bool EraTalentBots_SpecTabs(Player* p, uint32* tabs3)
     // patched GetPlayerSpecTabs calls this for any Player*; we decide who it serves.
     if (!p || !tabs3 || !EraTalentBots::IsEraManaged(p))
         return false;
-    EraId era = EraTalentBots::EraFor(p);
+    EraId era = EraTransition::StoredEra(p);
 
     std::array<uint32, 3> t{ 0, 0, 0 };
     bool cached = false;
@@ -723,8 +497,7 @@ bool EraTalentBots_SpecTabs(Player* p, uint32* tabs3)
         g_specTabsCache[p->GetGUID()] = t;
     }
 
-    if (t[0] + t[1] + t[2] == 0)
-        return false;   // no era rows yet (not reconciled) -> caller uses the native path
+    // An empty managed build is still authoritative; never fall back to stale native talents.
     tabs3[0] = t[0];
     tabs3[1] = t[1];
     tabs3[2] = t[2];
@@ -738,10 +511,10 @@ uint32 EraTalentBots_ResolveSpellId(Player* bot, uint32 stockSpellId)
     if (bot->HasSpell(stockSpellId))
         return stockSpellId;    // knows the stock id: native bots, WotLK band, knob off,
                                 // and era-gated stock grants (Shield Slam) all end here
-    if (Gated(bot))
-        return 0;               // player / module off -> exactly a false HasSpell
-    EraId era = EraTalentBots::BotEra(bot);
-    if (!EraHasTalentTrees(era))
+    if (!EraTalentBots::IsEraManaged(bot))
+        return 0;
+    EraId era = EraTransition::StoredEra(bot);
+    if (!EraHasTalentTrees(bot, era))
         return 0;
 
     // Lookup under the lock, copy the VALUE out; the scan below runs unlocked (it touches only
@@ -924,7 +697,6 @@ namespace EraTalentBots
     void OnBotLevelChanged(Player*) {}
     void OnLogout(Player*) {}
     void InvalidateSpecCache(Player*) {}
-    void BuildTrainerLevelIndex() {}
 }
 
 #endif   // MOD_PLAYERBOTS

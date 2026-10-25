@@ -10,17 +10,11 @@ public:
     bool Debug() const { return _debug; }
     bool BotTalents() const { return _botTalents; }
     bool GlyphGate() const { return _glyphGate; }
-    bool AdvanceGossip() const { return _advanceGossip; }
-    std::string const& AdvanceTextTBC() const { return _advanceTextTBC; }
-    std::string const& AdvanceTextWotLK() const { return _advanceTextWotLK; }
 private:
-    bool _enabled = true;
+    bool _enabled = false;
     bool _debug = false;
     bool _botTalents = false;
     bool _glyphGate = true;
-    bool _advanceGossip = true;
-    std::string _advanceTextTBC;
-    std::string _advanceTextWotLK;
 };
 #define sEraTalentsConfig EraTalentsConfig::instance()
 #endif

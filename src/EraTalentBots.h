@@ -5,18 +5,13 @@ class Player;
 
 namespace EraTalentBots
 {
-    // True for any playerbot (session flag OR attached AI — see the .cpp comment on login order).
+    // True for a playerbot without its own client (session flag OR attached AI — see the .cpp
+    // comment on login order). A SelfBot is a human player.
     bool IsBot(Player* p);
 
-    // THE bot era source: level band, NEVER EraFromIP (IP quest progression is 0 for every
-    // bot, i.e. "Vanilla" even at 80). 1-60 -> Vanilla, 61-70 -> TBC, 71+ -> WotLK.
+    // Humans and bots use the same actually earned IP milestones. Level only determines
+    // the point budget and never unlocks expansion talents or class spells.
     EraId BotEra(Player* bot);
-
-    // Era for ANY character: BotEra for bots, EraFromIP for real players. This is the
-    // required era source everywhere a bot can reach (the docs/era-talents-framework.md invariant) — EraFromIP
-    // reads every bot as Vanilla, which is exactly wrong for a TBC/WotLK-band bot the moment
-    // those eras' trees ship. Deliberately UNCONDITIONAL on EraTalents.BotTalents (matches
-    // EraGlyphGate::Allowed): a bot's era is a fact of its level band, not of the knob.
     EraId EraFor(Player* p);
 
     // THE "is this character's talent set era-managed" rule (its Vanilla/TBC era tree replaces
@@ -26,28 +21,17 @@ namespace EraTalentBots
     // without playerbots, so it reduces to the real-player rule).
     bool IsEraManaged(Player* p);
 
-    // Full reconcile at the bot's CURRENT level. Always tears down stale managed-era rows
-    // first (bracket up-moves would otherwise leave era clone spells in the spellbook where
-    // the AI's name-resolver can pick them). Then: managed band + class has nodes -> strip
-    // native talents, spend an era build for specTab (0-based tab), return true (caller must
-    // NOT run native talent init). Otherwise returns false (caller runs the native path).
-    // Inert (returns false, touches nothing) unless EraTalents.Enable AND
-    // EraTalents.BotTalents are on and the player is a bot.
+    // Extend a random bot's existing build with newly level-earned points; an altbot keeps its
+    // points for its owner. An actual expansion transition refunds the previous tree once in
+    // EraTransition; routine refreshes retain it.
+    // Returns true while a managed era or pending transition owns the talent pool.
     bool FactoryReconcile(Player* bot, int specTab);
 
-    void OnBotLogin(Player* bot);          // re-grant persisted era passives (cheap, 1 query)
-    void OnBotLevelChanged(Player* bot);   // spend new points; handle band crossings
+    void OnBotLogin(Player* bot);          // re-grant persisted era passives from startup cache
+    void OnBotLevelChanged(Player* bot);   // spend new points after earned transitions
     void OnLogout(Player* p);              // drop the spec-tab cache entry (players: no-op erase)
     void InvalidateSpecCache(Player* p);   // era rows changed outside this unit (player TryLearn/
                                            // Reset) — the spec-tab bridge serves players too
-
-    // ONE WorldDatabase query at worldserver startup, building SpellId -> MIN(trainer_spell.
-    // ReqLevel) for every stock spell with a levelled trainer row (band ids excluded — the Phase
-    // 9.5 sweep owns those). Read-only afterwards, so map-thread readers need no lock. Feeds the
-    // bracket DOWN-move residue strip in TeardownStale: trainer-taught STOCK spells above the
-    // bot's new level had no owner before (measured: Frostfire Bolt 42985, ReqLevel 77, still on
-    // TBC-band mage bots after an 80 -> 70 move). Call from WorldScript::OnStartup.
-    void BuildTrainerLevelIndex();
 }
 
 #ifdef MOD_PLAYERBOTS
@@ -81,12 +65,6 @@ bool EraTalentBots_SpecTabs(Player* bot, uint32* tabs3);
 // the id to cast/compare (totem UNIT_CREATED_BY_SPELL identity checks included). CACHED
 // per (guid, stockId) — hot AI paths never re-scan; invalidated with the spec-tab cache.
 uint32 EraTalentBots_ResolveSpellId(Player* bot, uint32 stockSpellId);
-// Post-trainer-walk hook (patch 0020): called right after each PlayerbotFactory
-// InitAvailableSpells(). The walk is class-only gated, so it re-teaches BOTH TBC paladin faction
-// seals (946080 Seal of Blood / 946084 Seal of Vengeance) after the mid-build reconcile has
-// already dropped the wrong one — this is the only strip site that runs AFTER the walk. Inert
-// unless EraTalents.BotTalents is on, the target is a bot, and its band era is managed.
-void EraTalentBots_PostTrainerWalk(Player* bot);
 #endif   // MOD_PLAYERBOTS
 
 #endif

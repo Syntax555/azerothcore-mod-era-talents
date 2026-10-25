@@ -4,7 +4,7 @@
 # Usage: ./apply-patches.sh <azerothcore-root>
 #
 # Always:   patches/core/*                   (inert until a character is in an era band)
-#           patches/individual-progression/* (IP is REQUIRED — aborts if the module is missing)
+# IP remains REQUIRED. Its ordinary earned progression paths are preserved unchanged.
 # If present: patches/playerbots/*           (<root>/modules/mod-playerbots exists)
 #             patches/multibot-bridge/*      (<root>/modules/mod-multibot-bridge exists)
 #
@@ -42,7 +42,7 @@ apply_dir () {   # $1 = patches/<target> dir
 
 echo "==> mod-era-talents patches -> $AC"
 apply_dir "$HERE/patches/core"
-apply_dir "$HERE/patches/individual-progression"
+# The manual-advance IP patch is deliberately excluded by the earned adaptation.
 if [[ -d "$AC/modules/mod-playerbots" ]]; then apply_dir "$HERE/patches/playerbots"; else echo "    (mod-playerbots not present — bot patches skipped)"; fi
 if [[ -d "$AC/modules/mod-multibot-bridge" ]]; then apply_dir "$HERE/patches/multibot-bridge"; else echo "    (mod-multibot-bridge not present — bridge patch skipped)"; fi
 echo "==> done"

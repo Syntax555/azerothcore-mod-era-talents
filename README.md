@@ -2,11 +2,12 @@
 
 ## AzerothCore Module
 
-**Era-authentic talent trees for characters progressing through the expansions.** While a
+**Historical talent trees for characters earning their way through the expansions.** While a
 character is in the Vanilla or TBC era (as decided by
 [mod-individual-progression](https://github.com/ZhengPeiRu21/mod-individual-progression)), the
 stock WotLK talent window is fenced off and replaced by that era's real trees for its class — and
-the talents actually do what their tooltips say.
+the server implements the restored talent mechanics. Data comes from Vanilla 1.12.1 and TBC
+Classic 2.5.4; this is not a complete reconstruction of every original-expansion mechanic.
 
 Individual Progression gives every character its own expansion timeline on a single WotLK realm,
 but it does not touch the talent system: a "Vanilla" character still gets WotLK's 71-point trees
@@ -25,52 +26,40 @@ data.
   stock passive is reused; where WotLK retuned or removed it the module ships its own server-side
   version — restored abilities (the Vanilla seal/judgement system, Bloodthirst, Conflagrate, the
   Vanilla Vampiric Embrace, TBC Mangle, the full Vanilla/TBC totem set, …), procs and per-rank
-  passives: about 3,600 custom spell rows in a reserved id band. **Stock spells are never modified**,
-  so WotLK-era characters on the same realm are unaffected.
+  passives: about 3,600 custom spell rows in a reserved id band. Era markers select historical
+  mechanics while later-era characters keep their corresponding spell variants.
   See **[Era talents — class by class](docs/era-talents-classes.md)**.
 * **Era-correct spellbooks and glyphs.** WotLK-only talents and their spells are stripped in earlier
   eras, and glyphs are WotLK-only (`EraTalents.GlyphGate`; Death Knights exempt).
-* **Real expansion transitions.** Crossing into TBC or WotLK wipes talents for a full respec into the
-  new trees. Because of that, advancing is a **player choice**: when eligible, Anduin Wrynn
-  (Alliance) / Thrall (Horde) offer "Progress to the next expansion" with a confirm popup.
-* **Bots too (optional).** With mod-playerbots installed and `EraTalents.BotTalents = 1`, bots in
-  the Vanilla (1–60) and TBC (61–70) level bands spend authored era builds for their spec, the bot AI
-  uses the era versions of its spells, and their consumables/glyphs are era-gated.
+* **Earned expansion transitions.** Actual IP milestone/quest completion moves a character into
+  the next expansion and refunds their level-earned points once for its changed tree. No gossip
+  forces a stage, and ordinary relogs or bot refreshes never give a free respec.
+* **Bots too (optional).** With mod-playerbots installed and `EraTalents.BotTalents = 1`, bots
+  use their own earned IndividualProgression milestones for Vanilla/TBC trees. Level alone never
+  advances an expansion. Random bots' authored builds spend newly earned points without routine
+  free resets; altbots and SelfBot characters keep unspent points for their owner.
 
 ## Requirements
-* **AzerothCore 3.3.5a** — patches cut against the mod-playerbots fork at `413bea61`
-  (2026-09-07); see *Compatibility* below for stock `master`.
-* **[mod-individual-progression](https://github.com/ZhengPeiRu21/mod-individual-progression)** —
-  **required**. Follow its own install notes (`EnablePlayerSettings = 1`,
-  `DBC.EnforceItemAttributes = 0`). Cut against IP `977e200`.
-* Optional: **[mod-playerbots](https://github.com/mod-playerbots/mod-playerbots)** (`b949b50`) on
-  the playerbots fork of the core, and
-  **[mod-multibot-bridge](https://github.com/Wishmaster117/mod-multibot-bridge)** (`759c100`).
-  Both are detected automatically at build/patch time.
 
-## How to Install
-1. Clone the module (and IP, if you have not already) into your core's `modules/` directory:
-   ```bash
-   cd /path/to/azerothcore-wotlk
-   git clone https://github.com/ZhengPeiRu21/mod-individual-progression.git modules/mod-individual-progression
-   git clone https://github.com/lathcf/azerothcore-mod-era-talents.git modules/mod-era-talents
-   ```
-   Keep the directory name **`modules/mod-era-talents`** (the cmake file locates its sibling modules by
-   relative path, and other modules may include its headers from there).
-2. Apply the source patches (core + IP always; playerbots / multibot-bridge only when those
-   modules are present):
-   ```bash
-   modules/mod-era-talents/apply-patches.sh .
-   ```
-   The script is idempotent — **re-run it after every `git pull`/`reset` of the core or those
-   modules** (a reset silently drops the patches), then rebuild.
-3. Re-run CMake and build as usual. CMake prints `[mod-era-talents] mod-playerbots found — bot era
-   talents compiled in` or `… not found — bot support compiled out (players only)`.
-4. Start the worldserver. The core's DB updater applies `data/sql/world/base` and
-   `data/sql/characters/base` automatically. The startup log shows
-   `[mod-era-talents] startup (enable=1)`.
-5. Optional: copy `conf/mod_era_talents.conf.dist` to `<etc>/modules/mod_era_talents.conf` to edit
-   the knobs below. Defaults are sensible; the module runs without a copy.
+* AzerothCore 3.3.5a, Individual Progression and the earned integration patches pinned by the
+  portable project's `versions.lock.json`.
+* The matching EraTalents addon and merged client MPQ for every human client.
+* Playerbots for autonomous bot builds; the Multibot bridge is optional.
+
+Use the portable profiles together. Upstream per-player bypass settings and manual expansion
+advance patches are not part of this earned adaptation.
+
+## Portable installation
+
+This source is the earned adaptation packaged by `mod-playerbots-portable`. Its parent project's
+`versions.lock.json` pins the module, server, IP and playerbots revisions plus adaptation patches.
+Use the complete portable build or its documented source workflow; do not replace modules with
+unreviewed latest clones or apply the upstream manual-advance IP patch. Source preparation runs
+`cmake -P cmake/PrepareModules.cmake` from the portable repository before the normal build.
+
+The core DB updater applies module world/character SQL on startup. The adaptation restores paid
+trainer rows and does not run the three upstream character-spell cleanup migrations. Enable the
+module explicitly or apply the portable startup profiles; the module's own default is disabled.
 
 ### Client install (each player)
 Two pieces, both required for the intended experience:
@@ -78,36 +67,37 @@ Two pieces, both required for the intended experience:
   `World of Warcraft/Interface/AddOns/EraTalents/`. It **is** the talent window in Vanilla/TBC (the
   normal talent button/key opens it).
 * **`patch-V.mpq`** — copy to `World of Warcraft/Data/`. This is IP's own client patch with this
-  module's custom buff/debuff rows merged in, so custom auras (e.g. the Improved Blizzard "Chilled"
-  debuff) show an icon and name. Without it everything still works; those auras just have no icon.
-  Build it with `client-patch/build-client-patch.sh` (writes `client-patch/out/patch-V.mpq`). It needs
-  **either Docker or** a native toolchain (`git cmake gcc g++ make zlib1g-dev libbz2-dev`, python3 +
-  PyYAML, `7z`): with only Docker present it builds and runs the MPQ tools inside a throwaway image
-  automatically. Or download one from this repo's Releases when attached.
-  The addon warns in red chat when a player's `patch-V.mpq` is from a stale generation.
+  module's custom spell and skill-line rows merged in. It is required: the client must know the
+  historical usable spells, trainer requirements and aura descriptions, not only cosmetic icons.
+  Use the matching client artifacts from the complete portable package. The addon warns when the
+  MPQ generation is stale; never install another module's conflicting `patch-V.mpq` over it.
 
 ## Configuration (`conf/mod_era_talents.conf.dist`)
 | Key | Default | Meaning |
 |-----|---------|---------|
-| `EraTalents.Enable` | 1 | Master switch. Off = module fully inert. |
+| `EraTalents.Enable` | 0 | Opt-in master switch; the portable profile enables it. |
 | `EraTalents.Debug` | 0 | Log each addon request/reply and every reconcile to the console. |
-| `EraTalents.BotTalents` | 0 | Bots in the Vanilla/TBC level bands get era builds (needs mod-playerbots compiled in). |
-| `EraTalents.GlyphGate` | 1 | Glyphs are WotLK-only for Vanilla/TBC-era characters (players by IP era, bots by level band; DKs exempt). |
-| `EraTalents.AdvanceGossip` | 1 | Anduin/Thrall offer "Progress to the next expansion" when eligible. |
-| `EraTalents.AdvanceGossip.TextTBC` / `.TextWotLK` | (see file) | Confirm-popup wording. |
+| `EraTalents.BotTalents` | 0 | Bots use their own earned IP era; random bots incrementally spend level-earned points. |
+| `EraTalents.GlyphGate` | 1 | Blocks glyph use before earned Wrath while preserving existing paid glyph rows. |
+| `EraTalents.AdvanceGossip` | 0 | Compatibility key; force-advance gossip is disabled. |
 
-The IP patch adds `IndividualProgression.ManualAdvanceStates` to IP's config. Set it to `"8 13"`
-(the module's intended value) so IP's automatic advance can no longer cross the two talent-wiping
-stages (7→8 Vanilla→TBC, 12→13 TBC→WotLK); the player advances by choice at the faction leader.
-Leave it empty to keep IP's stock automatic progression — talents are then wiped the moment a
-boss kill or quest turn-in crosses the stage.
+Normal IP boss-credit and quest paths remain authoritative for every character. An actual
+expansion crossing refunds the previous tree once; relogs and routine bot refreshes preserve
+spent points. Vanilla-to-TBC still requires earned Naxxramas progression and the actual
+Into the Breach quest, and Wrath requires the earned TBC completion path. No gossip copies or
+forces another character's progression.
 
 ## Playerbots (optional)
-When `modules/mod-playerbots` exists the build compiles the bot layer in and `apply-patches.sh`
-applies the two playerbots patches (factory era builds + era-aware AI spell resolution) and, if
-present, the multibot-bridge patch (era-correct spec display in BotGrid). A bot's era comes from
-its **level band** (1–60 Vanilla, 61–70 TBC, 71+ WotLK), never from IP progression. Turn it on with
-`EraTalents.BotTalents = 1`. Bots need no client artifact.
+
+Bots use their own **earned IP progression**, exactly as human characters do. Turn on
+`EraTalents.BotTalents = 1` after installing the portable integration patches. Bot AI resolves
+known historical spell variants and uses the existing tree when adding new earned points.
+Usable class spells are paid trainer lessons or actual earned talent/quest grants; level alone
+never gives a trained spell rank. Existing known variants transfer conservatively across eras.
+
+The portable project applies pinned source patches through its module preparation workflow;
+do not apply the upstream manual-advance patch. Humans need the matching talent addon and client
+MPQ. Bots use server data and need no client artifact of their own.
 
 ## Commands (GM / console)
 `.eratalents status|doctor|reset|learn <character>` — **`doctor` is the first stop for any "this

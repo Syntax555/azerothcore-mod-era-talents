@@ -10,6 +10,7 @@ EraTalentContent* EraTalentContent::instance() { static EraTalentContent i; retu
 
 void EraTalentContent::Load()
 {
+    _nodesByEraClass.clear();
     _nodes.clear();
     if (QueryResult r = WorldDatabase.Query(
             "SELECT id,eraId,classId,tab,tierRow,col,maxRank,prereqTalentId,prereqPoints FROM era_talent"))
@@ -45,6 +46,8 @@ void EraTalentContent::Load()
                 it->second.rankSpell[rank - 1] = spell;
         } while (r->NextRow());
     }
+    for (auto const& kv : _nodes)
+        _nodesByEraClass[uint16((kv.second.eraId << 8) | kv.second.classId)].push_back(&kv.second);
     _generationStamp.clear();
     if (QueryResult r = WorldDatabase.Query(
             "SELECT v FROM era_talent_meta WHERE k='generation'"))
@@ -59,11 +62,9 @@ const EraTalentNode* EraTalentContent::Node(uint32 talentId) const
     return it == _nodes.end() ? nullptr : &it->second;
 }
 
-std::vector<const EraTalentNode*> EraTalentContent::NodesFor(uint8 eraId, uint8 classId) const
+std::vector<const EraTalentNode*> const& EraTalentContent::NodesFor(uint8 eraId, uint8 classId) const
 {
-    std::vector<const EraTalentNode*> out;
-    for (auto const& kv : _nodes)
-        if (kv.second.eraId == eraId && kv.second.classId == classId)
-            out.push_back(&kv.second);
-    return out;
+    static std::vector<const EraTalentNode*> const none;
+    auto it = _nodesByEraClass.find(uint16((eraId << 8) | classId));
+    return it == _nodesByEraClass.end() ? none : it->second;
 }

@@ -1,99 +1,145 @@
-// EraGlyphGate — glyphs are a WotLK-era system (design doc 2026-08-26 Phase 3, D).
-// Blocks glyph-item use and strips equipped glyphs for Vanilla/TBC-era characters,
-// players AND bots. DKs are always exempt (WotLK class; matches the talent no-nodes guard).
+/*
+ * This file is part of the AzerothCore Project. See AUTHORS file for Copyright
+ * information
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ */
+
 #include "EraGlyphGate.h"
-#include "EraTalentsConfig.h"
-#include "EraTalentIP.h"
+
+#include "DBCStores.h"
 #include "EraTalentBots.h"
+#include "EraTalentIP.h"
+#include "EraTalentsConfig.h"
+#include "EraTransition.h"
 #include "Player.h"
 #include "ScriptMgr.h"
+#include "Spell.h"
 #include "SpellAuras.h"
 #include "SpellInfo.h"
-#include "DBCStores.h"
+#include "SpellMgr.h"
 
 namespace EraGlyphGate
 {
-    bool Allowed(Player* p)
-    {
-        if (!p)
-            return true;
-        if (!sEraTalentsConfig->Enabled() || !sEraTalentsConfig->GlyphGate())
-            return true;
-        if (p->getClass() == CLASS_DEATH_KNIGHT)
-            return true;   // WotLK class — glyphs are era-legal at any level
-        return EraTalentBots::EraFor(p) == ERA_WOTLK;   // bots by level band, players by IP
-    }
+bool Allowed(Player* player)
+{
+    if (!player || !sEraTalentsConfig->Enabled() || !sEraTalentsConfig->GlyphGate())
+        return true;
+    if (player->getClass() == CLASS_DEATH_KNIGHT)
+        return true;  // Preserve existing hero-class characters; strict creation is
+                      // gated elsewhere.
+    return EraTalentBots::EraFor(player) == ERA_WOTLK && EraTransition::StoredEra(player) == ERA_WOTLK;
+}
 
-    void StripIfDisallowed(Player* p)
-    {
-        if (!p || Allowed(p))
-            return;
+bool IsOwnedGlyphSpell(Player* player, uint32 spellId)
+{
+    if (!player)
+        return false;
+    for (uint8 slot = 0; slot < MAX_GLYPH_SLOT_INDEX; ++slot)
+        if (GlyphPropertiesEntry const* glyph = sGlyphPropertiesStore.LookupEntry(player->GetGlyph(slot)))
+            if (glyph->SpellId == spellId)
+                return true;
+    return false;
+}
 
-        bool stripped = false;
-        for (uint32 slotIndex = 0; slotIndex < MAX_GLYPH_SLOT_INDEX; ++slotIndex)
+void StripIfDisallowed(Player* player)
+{
+    if (!player)
+        return;
+    bool const allowed = Allowed(player);
+    bool changed = false;
+    for (uint8 slot = 0; slot < MAX_GLYPH_SLOT_INDEX; ++slot)
+    {
+        uint32 const glyphId = player->GetGlyph(slot);
+        uint32 const visible = allowed ? glyphId : 0;
+        if (player->GetUInt32Value(PLAYER_FIELD_GLYPHS_1 + slot) != visible)
         {
-            uint32 glyph = p->GetGlyph(slotIndex);
-            GlyphPropertiesEntry const* glyphEntry = sGlyphPropertiesStore.LookupEntry(glyph);
-            if (!glyphEntry)
-                continue;
-
-            // Same wipe mechanics PlayerbotFactory::InitGlyphs uses: the glyph aura, any
-            // aura it triggered, then the slot itself.
-            p->RemoveAurasDueToSpell(glyphEntry->SpellId);
-            Unit::AuraMap& ownedAuras = p->GetOwnedAuras();
-            for (Unit::AuraMap::iterator iter = ownedAuras.begin(); iter != ownedAuras.end();)
-            {
-                Aura* aura = iter->second;
-                if (SpellInfo const* trig = aura->GetTriggeredByAuraSpellInfo())
-                {
-                    if (trig->Id == glyphEntry->SpellId)
-                    {
-                        p->RemoveOwnedAura(iter);
-                        continue;
-                    }
-                }
-                ++iter;
-            }
-            p->SetGlyph(slotIndex, 0, true);
-            stripped = true;
+            // GetGlyph reads the persisted per-spec ownership array. Hide only the
+            // client field; SetGlyph(0) would consume an earned glyph and overwrite
+            // saved ownership.
+            player->SetUInt32Value(PLAYER_FIELD_GLYPHS_1 + slot, visible);
+            changed = true;
+        }
+        GlyphPropertiesEntry const* glyph = sGlyphPropertiesStore.LookupEntry(glyphId);
+        if (!glyph)
+            continue;
+        if (allowed)
+        {
+            GlyphSlotEntry const* glyphSlot = sGlyphSlotStore.LookupEntry(player->GetGlyphSlot(slot));
+            SpellInfo const* info = sSpellMgr->GetSpellInfo(glyph->SpellId);
+            if (glyphSlot && glyphSlot->TypeFlags == glyph->TypeFlags && info && !player->HasAura(glyph->SpellId))
+                player->CastSpell(player, glyph->SpellId,
+                                  TriggerCastFlags(TRIGGERED_FULL_MASK &
+                                                   ~(TRIGGERED_IGNORE_SHAPESHIFT | TRIGGERED_IGNORE_CASTER_AURASTATE)));
+            continue;
         }
 
-        if (stripped)
-            p->SendTalentsInfoData(false);
+        player->RemoveAurasDueToSpell(glyph->SpellId);
+        Unit::AuraMap& owned = player->GetOwnedAuras();
+        for (Unit::AuraMap::iterator it = owned.begin(); it != owned.end();)
+        {
+            Aura* aura = it->second;
+            if (SpellInfo const* trigger = aura->GetTriggeredByAuraSpellInfo())
+            {
+                if (trigger->Id == glyph->SpellId)
+                {
+                    player->RemoveOwnedAura(it);
+                    continue;
+                }
+            }
+            ++it;
+        }
     }
+    if (changed)
+        player->SendTalentsInfoData(false);
 }
-
-#ifdef MOD_PLAYERBOTS
-bool EraGlyphGate_BotGlyphsAllowed(Player* bot)
-{
-    return EraGlyphGate::Allowed(bot);
-}
-#endif
+}  // namespace EraGlyphGate
 
 class era_glyph_gate : public PlayerScript
 {
 public:
     era_glyph_gate() : PlayerScript("era_glyph_gate") {}
 
-    // Blocks the glyph-apply path: applying a glyph is CMSG_USE_ITEM on the glyph item,
-    // which runs Player::CanUseItem -> this hook. Guard-first: bail before any policy work.
-    [[nodiscard]] bool OnPlayerCanUseItem(Player* p, ItemTemplate const* proto,
-                                          InventoryResult& result) override
+    [[nodiscard]] bool OnPlayerCanUseItem(Player* player, ItemTemplate const* item, InventoryResult& result) override
     {
-        if (!p || !proto || proto->Class != ITEM_CLASS_GLYPH)
-            return true;
-        if (EraGlyphGate::Allowed(p))
+        if (!player || !item || item->Class != ITEM_CLASS_GLYPH || EraGlyphGate::Allowed(player))
             return true;
         result = EQUIP_ERR_CANT_DO_RIGHT_NOW;
         return false;
     }
 
-    // Login covers players AND bots (random-bot sessions log in like players), including
-    // the ~209 legacy glyphed Vanilla-band bots as they cycle online.
-    void OnPlayerLogin(Player* p) override
+    void OnPlayerLogin(Player* player) override { EraGlyphGate::StripIfDisallowed(player); }
+
+    void OnPlayerAfterSpecSlotChanged(Player* player, uint8 /*newSlot*/) override
     {
-        EraGlyphGate::StripIfDisallowed(p);
+        EraGlyphGate::StripIfDisallowed(player);
     }
 };
 
-void AddSC_era_glyph_gate() { new era_glyph_gate(); }
+// Core shapeshift handling and spec activation can recast stored glyph auras.
+// Reject those casts before effects execute, while keeping the player's earned
+// ownership arrays intact.
+class era_glyph_spell_gate : public AllSpellScript
+{
+public:
+    era_glyph_spell_gate() : AllSpellScript("era_glyph_spell_gate") {}
+
+    [[nodiscard]] bool CanPrepare(Spell* spell, SpellCastTargets const* /*targets*/,
+                                  AuraEffect const* /*triggeredByAura*/) override
+    {
+        if (!spell || !spell->GetCaster())
+            return true;
+        Player* player = spell->GetCaster()->ToPlayer();
+        return !player || EraGlyphGate::Allowed(player) ||
+               !EraGlyphGate::IsOwnedGlyphSpell(player, spell->GetSpellInfo()->Id);
+    }
+};
+
+void AddSC_era_glyph_gate()
+{
+    new era_glyph_gate();
+    new era_glyph_spell_gate();
+}

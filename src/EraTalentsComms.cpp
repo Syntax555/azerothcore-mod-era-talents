@@ -1,21 +1,23 @@
 #include "EraTalentsComms.h"
-#include "EraTalents.h"
-#include "EraTalentBots.h"
-#include "EraTalentContent.h"
-#include "EraTalentIP.h"
-#include "EraTalentsConfig.h"
-#include "ObjectAccessor.h"
-#include "ObjectDefines.h"       // INSPECT_DISTANCE
-#include "ScriptMgr.h"
-#include "Player.h"
-#include "SharedDefines.h"
-#include "World.h"               // sWorld->getBoolConfig(CONFIG_TALENTS_INSPECTING)
 
 #include <cctype>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include "EraTalentBots.h"
+#include "EraTalentContent.h"
+#include "EraTalentIP.h"
+#include "EraTalents.h"
+#include "EraTalentsConfig.h"
+#include "EraTransition.h"
+#include "ObjectAccessor.h"
+#include "ObjectDefines.h"  // INSPECT_DISTANCE
+#include "Player.h"
+#include "ScriptMgr.h"
+#include "SharedDefines.h"
+#include "World.h"  // sWorld->getBoolConfig(CONFIG_TALENTS_INSPECTING)
 
 // ERATAL addon protocol.
 //
@@ -160,7 +162,7 @@ namespace
         if (!t)
             return { "ISYNC " + echo + " 0 0 0" };
 
-        EraId era = EraTalentBots::EraFor(t);
+        EraId era = EraTransition::StoredEra(t);
         std::string header = "ISYNC " + echo + " " + std::to_string(uint32(era)) + " 1 "
                            + std::to_string(uint32(t->getClass())) + " ";
         return ChunkRankList(header, RankList(t, era));
@@ -177,14 +179,14 @@ namespace EraTalentsComms
 {
     std::vector<std::string> BuildSync(Player* p)
     {
-        EraId era = EraFromIP(p);
+        EraId era = EraTransition::StoredEra(p);
         int availPts = EraTalents::AvailablePoints(p, era);
 
         // `managed` (1/0) is server-authoritative: it tells the addon whether to REPLACE the native
         // talent frame with our window. Only an era with authored trees is managed; a TBC character
         // (no trees yet) sends managed=0 and keeps Blizzard's WotLK frame. Header layout:
         //   "SYNC <era> <managed> <availPts> [<seq>/<total>] <id:rank,...>"
-        int managed = EraHasTalentTrees(era) ? 1 : 0;
+        int managed = EraHasTalentTrees(p, era) ? 1 : 0;
         std::string header = "SYNC " + std::to_string(uint32(era)) + " " + std::to_string(managed)
                            + " " + std::to_string(availPts) + " ";
         return ChunkRankList(header, RankList(p, era));

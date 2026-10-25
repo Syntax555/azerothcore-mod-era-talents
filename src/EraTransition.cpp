@@ -1,19 +1,46 @@
 #include "EraTransition.h"
+
+#include <mutex>
+#include <unordered_map>
+#include <unordered_set>
+
+#include "DatabaseEnv.h"
+#include "EraEarnedTraining.h"
+#include "EraGlyphGate.h"
+#include "EraPersistence.h"
 #include "EraTalents.h"
 #include "EraTalentsComms.h"
 #include "EraTalentsConfig.h"
-#include "EraGlyphGate.h"
-#include "ScriptMgr.h"
-#include "Player.h"
-#include "DatabaseEnv.h"
-#include "QueryResult.h"
 #include "Field.h"
 #include "Log.h"
-#include <mutex>
-#include <unordered_map>
+#include "Player.h"
+#include "QueryResult.h"
+#include "ScriptMgr.h"
 
 namespace
 {
+std::unordered_map<uint32, EraId> g_storedEra;
+std::mutex g_storedEraMutex;
+thread_local std::unordered_set<uint32> g_nativeResets;
+
+class NativeResetScope
+{
+public:
+    explicit NativeResetScope(Player* p)
+        : _guid(p->GetGUID().GetCounter()), _inserted(g_nativeResets.insert(_guid).second)
+    {
+    }
+    ~NativeResetScope()
+    {
+        if (_inserted)
+            g_nativeResets.erase(_guid);
+    }
+
+private:
+    uint32 _guid;
+    bool _inserted;
+};
+
     std::unordered_map<ObjectGuid, EraId> g_pending;   // deferred target era while in combat
     std::mutex g_pendingMutex;   // Detect/FlushCombat run per-player inside Map::Update — maps
                                  // tick in parallel, so this shared map needs the same locking
@@ -22,24 +49,53 @@ namespace
 
 namespace EraTransition
 {
+void LoadCache()
+{
+    std::unordered_map<uint32, EraId> loaded;
+    if (QueryResult result = CharacterDatabase.Query("SELECT guid,lastEra FROM era_talent_char_state"))
+    {
+        do
+        {
+            Field* fields = result->Fetch();
+            uint8 era = fields[1].Get<uint8>();
+            if (era <= ERA_WOTLK)
+                loaded.emplace(fields[0].Get<uint32>(), EraId(era));
+        } while (result->NextRow());
+    }
+    std::lock_guard<std::mutex> guard(g_storedEraMutex);
+    g_storedEra = std::move(loaded);
+}
+
     EraId StoredEra(Player* p)
     {
-        if (QueryResult r = CharacterDatabase.Query(
-                "SELECT lastEra FROM era_talent_char_state WHERE guid={}", p->GetGUID().GetCounter()))
-            return EraId((*r)[0].Get<uint8>());
+        if (!p)
+            return ERA_WOTLK;
+        std::lock_guard<std::mutex> guard(g_storedEraMutex);
+        auto it = g_storedEra.find(p->GetGUID().GetCounter());
+        if (it != g_storedEra.end())
+            return it->second;
         return EraFromIP(p);   // first sighting: adopt current era, no reset
     }
 
     void SetStoredEra(Player* p, EraId era)
     {
-        CharacterDatabase.DirectExecute(
-            "REPLACE INTO era_talent_char_state (guid,lastEra) VALUES ({},{})",
-            p->GetGUID().GetCounter(), uint8(era));
+        if (!p)
+            return;
+        uint32 guid = p->GetGUID().GetCounter();
+        std::lock_guard<std::mutex> guard(g_storedEraMutex);
+        auto [it, inserted] = g_storedEra.try_emplace(guid, era);
+        if (!inserted && it->second == era)
+            return;
+        it->second = era;
+        EraPersistence::Queue({"REPLACE INTO era_talent_char_state (guid,lastEra) VALUES (" + std::to_string(guid) +
+                               "," + std::to_string(uint32(era)) + ")"});
     }
+
+    bool NativeResetActive(Player* p) { return p && g_nativeResets.count(p->GetGUID().GetCounter()) != 0; }
 
     static void Pin(Player* p, EraId era)
     {
-        if (EraHasTalentTrees(era))
+        if (EraHasTalentTrees(p, era))
         {
             p->SetFreeTalentPoints(0);
             p->SendTalentsInfoData(false);
@@ -62,6 +118,7 @@ namespace EraTransition
     // character takes the same path resetTalents(true) always did.
     static void ResetAllSpecs(Player* p)
     {
+        NativeResetScope nativeReset(p);
         uint8 const specs = p->GetSpecsCount();
         if (specs <= 1)
         {
@@ -90,7 +147,7 @@ namespace EraTransition
     // backstop against any future path that leaks native talents into a managed era.
     void StripNativeTalents(Player* p, EraId era)
     {
-        if (!p || !sEraTalentsConfig->Enabled() || !EraHasTalentTrees(era))
+        if (!p || !sEraTalentsConfig->Enabled() || !EraHasTalentTrees(p, era))
             return;
 
         bool leaked = false;
@@ -114,6 +171,12 @@ namespace EraTransition
         if (!p || !sEraTalentsConfig->Enabled())
             return;
 
+        // A deferred combat target or a stale caller must never authorize a new tree. The
+        // character's currently earned IP milestones, for humans and bots, are authoritative.
+        if (to != EraFromIP(p))
+            return;
+        from = StoredEra(p);
+
         if (p->IsInCombat())
         {
             std::lock_guard<std::mutex> guard(g_pendingMutex);
@@ -127,12 +190,12 @@ namespace EraTransition
         // (resetTalents) or delete an era char's spent talents (Reset's DELETE).
         if (from != to)
         {
-            bool const fromManaged = EraHasTalentTrees(from);
-            bool const toManaged   = EraHasTalentTrees(to);
+            auto earnedSpells = EraEarnedTraining::Snapshot(p);
+            bool const fromManaged = EraHasTalentTrees(p, from);
+            bool const toManaged = EraHasTalentTrees(p, to);
 
-            // Full reset of the era we are LEAVING: strip its granted passives + delete its rows.
-            // Only a managed (tree-bearing) era has anything to strip — an unimplemented era (TBC
-            // today) never granted passives, so skip it.
+            // A real expansion crossing refunds only the departing historical tree. Ordinary
+            // login, level gains, and factory maintenance retain the existing allocated build.
             if (fromManaged)
                 EraTalents::Reset(p, from);
 
@@ -146,27 +209,31 @@ namespace EraTransition
             }
             else if (fromManaged)
             {
-                // Leaving a managed era for a native one (WotLK, or an era whose trees aren't built
-                // yet like TBC): restore the native frame + level-appropriate WotLK pool. resetTalents
+                // Leaving a historical tree for Wrath: restore the native frame and the
+                // talent pool earned through the character's actual levels. resetTalents
                 // only REFUNDS spent core talents — an era char has none (its talents were era
                 // passives), and its core pool was pinned to 0, so refunding leaves 0.
                 // InitTalentForLevel() re-grants the pool (points stick: the target era is not
                 // managed, so the pin hook's OnPlayerFreeTalentPointsChanged bails instead of zeroing).
+                NativeResetScope nativeReset(p);
                 p->resetTalents(true);
                 p->InitTalentForLevel();
                 p->SendTalentsInfoData(false);
             }
-            // else: native -> native (e.g. TBC <-> WotLK — neither has custom trees). Both already
-            // use Blizzard's talent system, so do NOT touch talents — the player keeps the WotLK
-            // spec they built. (Once TBC trees ship, TBC becomes managed and this path won't apply.)
+            // A class with no authored historical tree stays native and keeps its existing spec.
+
+            // Publish the settled stamp before callbacks reconcile or describe the new tree.
+            // The talent refund above has completed, so a second Detect cannot reset it again.
+            SetStoredEra(p, to);
 
             // Tell the addon the era flipped so it swaps panels live (no relog). Safe on login
             // too — the addon just re-parses; on a real crossing this is what updates isEraChar.
             EraTalentsComms::SendSync(p);
 
-            // Reconcile baseline-vs-talent spells (e.g. Holy Nova) for the era being entered:
-            // a down-transition strips the WotLK/TBC baseline grant, an up-transition grants it.
+            // Reconcile the new era's ownership rules and translate only spell variants that
+            // this character actually acquired before crossing. New usable ranks stay paid.
             EraTalents::ReconcileBaselineSpells(p, to);
+            EraEarnedTraining::Restore(p, to, earnedSpells);
 
             if (sEraTalentsConfig->Debug())
                 LOG_INFO("module", "[mod-era-talents] transition {}->{} for {}", uint8(from), uint8(to), p->GetName());
@@ -177,32 +244,54 @@ namespace EraTransition
         // if we never persisted, stored would always equal now and a real crossing would be missed.
         SetStoredEra(p, to);
 
-        // Glyphs are WotLK-only: entering (or being reset into) a pre-WotLK era strips
-        // them; entering WotLK is a no-op (StripIfDisallowed checks Allowed internally).
+        // Suppress saved glyph effects before Wrath; restore the owned effects when earned.
+        // The glyph reconciler retains saved IDs and never consumes inventory.
         EraGlyphGate::StripIfDisallowed(p);
     }
 
-    void Detect(Player* p)
+    bool Detect(Player* p)
     {
         if (!p || !sEraTalentsConfig->Enabled())
-            return;
+            return false;
         EraId stored = StoredEra(p);
         EraId now = EraFromIP(p);
         if (stored != now)
+        {
+            bool applied = !p->IsInCombat();
             Run(p, stored, now);
+            return applied;
+        }
+        return false;
     }
 
     void FlushCombat(Player* p)
     {
-        EraId to;
+        if (!p)
+            return;
         {
             std::lock_guard<std::mutex> guard(g_pendingMutex);
             auto it = g_pending.find(p->GetGUID());
             if (it == g_pending.end())
                 return;
-            to = it->second;
             g_pending.erase(it);
         }
-        Run(p, StoredEra(p), to);   // outside the lock: Run mutates the spellbook + re-reads ranks
+        Run(p, StoredEra(p), EraFromIP(p));  // revalidate earned state after combat, outside the lock
+    }
+
+    void OnLogout(Player* p)
+    {
+        if (!p)
+            return;
+        std::lock_guard<std::mutex> guard(g_pendingMutex);
+        g_pending.erase(p->GetGUID());
+        // Keep g_storedEra: an immediate relog must observe the latest queued era stamp,
+        // rather than reread an older DB row while the transaction is still in flight.
+    }
+
+    void DeleteCache(uint32 guid)
+    {
+        std::lock_guard<std::mutex> guard(g_storedEraMutex);
+        g_storedEra.erase(guid);
+        EraPersistence::Queue({"DELETE FROM era_talent_char_state WHERE guid=" + std::to_string(guid)});
     }
 }

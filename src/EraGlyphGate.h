@@ -1,23 +1,31 @@
+/*
+ * This file is part of the AzerothCore Project. See AUTHORS file for Copyright
+ * information
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ */
+
 #ifndef MOD_ERA_GLYPH_GATE_H
 #define MOD_ERA_GLYPH_GATE_H
+
+#include "Define.h"
 class Player;
 
 namespace EraGlyphGate
 {
-    // Glyphs are WotLK-era only. True when this character may hold/apply glyphs:
-    // gate off, DK (always exempt), or era == WotLK (players: EraFromIP; bots: BotEra).
-    bool Allowed(Player* p);
+// Glyph effects and new glyph purchases are available after the earned Wrath
+// transition. Existing hero-class characters and disabled gates retain ordinary
+// core behavior.
+bool Allowed(Player* player);
+bool IsOwnedGlyphSpell(Player* player, uint32 spellId);
 
-    // Strip all equipped glyphs (aura + slot) when !Allowed. Safe no-op otherwise.
-    // Stripped glyphs are consumed — same behavior as a respec.
-    void StripIfDisallowed(Player* p);
-}
-
-#ifdef MOD_PLAYERBOTS
-// Only the playerbots patches call this; it exists only when mod-playerbots is compiled in.
-// C++-linkage bridge for fork patch 0020 (PlayerbotFactory::InitGlyphs): declared extern in
-// the patched fork file with this EXACT signature — keep in sync or the fork fails to link.
-bool EraGlyphGate_BotGlyphsAllowed(Player* bot);
-#endif
+// Hide/suppress early-era glyphs without modifying either spec's persisted
+// ownership. Once allowed, restore the active spec's owned slots and ordinary
+// glyph effects.
+void StripIfDisallowed(Player* player);
+}  // namespace EraGlyphGate
 
 #endif

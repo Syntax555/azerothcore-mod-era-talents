@@ -1,20 +1,24 @@
 #include "EraTalents.h"
-#include "EraTalentContent.h"
-#include "EraBandClassifier.h"
-#include "EraTalentIP.h"
-#include "EraTalentBots.h"   // EraTalentBots::EraFor — bots derive era from level band, never EraFromIP
-#include "EraTalentsConfig.h"
-#include "ScriptMgr.h"
-#include "Log.h"
-#include "Player.h"
-#include "DatabaseEnv.h"
-#include "QueryResult.h"
-#include "Field.h"
-#include "SpellMgr.h"
-#include "ObjectAccessor.h"
 
 #include <algorithm>
 #include <mutex>
+
+#include "DatabaseEnv.h"
+#include "EraBandClassifier.h"
+#include "EraEarnedTraining.h"
+#include "EraPersistence.h"
+#include "EraTalentBots.h"  // Humans and bots share earned IP era gates.
+#include "EraTalentContent.h"
+#include "EraTalentIP.h"
+#include "EraTalentsConfig.h"
+#include "EraTransition.h"
+#include "Field.h"
+#include "Log.h"
+#include "ObjectAccessor.h"
+#include "Player.h"
+#include "QueryResult.h"
+#include "ScriptMgr.h"
+#include "SpellMgr.h"
 
 // Master Demonologist (EraTalentPetScripts.cpp): re-apply/strip the active demon's branch for the
 // CURRENT talent state. Must run on TryLearn/Reset so a respec strips the buff without a resummon.
@@ -47,26 +51,9 @@ namespace
     // CurrentRank -> self-deadlock) and never while calling another module unit's locked API.
     std::mutex g_rankCacheMutex;
 
-    // Caller must hold g_rankCacheMutex. (The one-time DB load on miss runs under the lock on
-    // purpose: it makes concurrent first-touch loads of the same character impossible.)
-    std::unordered_map<uint32, uint8>& LoadRanks(Player* p, EraId era)
-    {
-        auto [it, inserted] = g_rankCache.try_emplace(RankKey(p, era));
-        if (inserted)
-        {
-            if (QueryResult r = CharacterDatabase.Query(
-                    "SELECT talentId, `rank` FROM era_character_talent WHERE guid={} AND eraId={}",
-                    p->GetGUID().GetCounter(), uint8(era)))
-            {
-                do
-                {
-                    Field* f = r->Fetch();
-                    it->second[f[0].Get<uint32>()] = f[1].Get<uint8>();
-                } while (r->NextRow());
-            }
-        }
-        return it->second;
-    }
+    // Caller holds g_rankCacheMutex. Startup preloads existing rows; a missing key is a new
+    // character, not permission to query the characters DB from a map update thread.
+    std::unordered_map<uint32, uint8>& LoadRanks(Player* p, EraId era) { return g_rankCache[RankKey(p, era)]; }
 
     // Active BotBuildScope. THREAD_LOCAL, and the previous comment here was WRONG: it claimed
     // "bot BUILDS run on the world thread only (factory randomize/bracket moves, roster commands,
@@ -91,6 +78,27 @@ namespace
 
 namespace EraTalents
 {
+void LoadCache()
+{
+    std::lock_guard<std::mutex> guard(g_rankCacheMutex);
+    g_rankCache.clear();
+    if (QueryResult r = CharacterDatabase.Query("SELECT guid, eraId, talentId, `rank` FROM era_character_talent"))
+    {
+        do
+        {
+            Field* f = r->Fetch();
+            uint8 era = f[1].Get<uint8>();
+            uint32 talentId = f[2].Get<uint32>();
+            uint8 rank = f[3].Get<uint8>();
+            const EraTalentNode* node = sEraTalentContent->Node(talentId);
+            if (era > uint8(ERA_WOTLK) || !node || node->eraId != era || rank == 0 || rank > node->maxRank)
+                continue;
+            uint64 key = (uint64(f[0].Get<uint32>()) << 2) | era;
+            g_rankCache[key][talentId] = rank;
+        } while (r->NextRow());
+    }
+}
+
     int SpentPoints(Player* p, EraId era)
     {
         std::lock_guard<std::mutex> guard(g_rankCacheMutex);
@@ -117,13 +125,12 @@ namespace EraTalents
         return LoadRanks(p, era);
     }
 
-    void EvictCache(Player* p)
+    void DeleteCache(uint32 guid)
     {
-        if (!p)
-            return;
         std::lock_guard<std::mutex> guard(g_rankCacheMutex);
         for (uint8 e = 0; e <= uint8(ERA_WOTLK); ++e)
-            g_rankCache.erase(RankKey(p, EraId(e)));
+            g_rankCache.erase((uint64(guid) << 2) | e);
+        EraPersistence::Queue({"DELETE FROM era_character_talent WHERE guid=" + std::to_string(guid)});
     }
 
     BotBuildScope::BotBuildScope(Player* p, EraId era)
@@ -139,27 +146,26 @@ namespace EraTalents
             return;
         g_botBuild.active = false;
 
-        // Persist the final rank state in one round trip. DirectExecute (not async Execute):
-        // the cache is evicted at logout, so the NEXT login's re-load must be guaranteed to
-        // see these rows — async runs on a different connection with no ordering guarantee
-        // against later sync reads.
-        std::unordered_map<uint32, uint8> ranks;
+        // Snapshot under the mutation lock, then flush immutable SQL on the world thread.
+        // DELETE and REPLACE share one transaction so a reset cannot resurrect old ranks.
         {
             std::lock_guard<std::mutex> guard(g_rankCacheMutex);
-            ranks = LoadRanks(_p, _era);   // copy: don't hold the lock across the DB write below
-        }
-        if (!ranks.empty())
-        {
+            auto const& ranks = LoadRanks(_p, _era);
+            std::vector<std::string> statements;
+            statements.push_back(
+                "DELETE FROM era_character_talent WHERE guid=" + std::to_string(_p->GetGUID().GetCounter()) +
+                " AND eraId=" + std::to_string(uint32(_era)));
             std::string values;
             for (auto const& [talentId, rank] : ranks)
             {
                 if (!values.empty())
                     values += ',';
-                values += '(' + std::to_string(_p->GetGUID().GetCounter()) + ',' + std::to_string(uint32(_era))
-                        + ',' + std::to_string(talentId) + ',' + std::to_string(uint32(rank)) + ')';
+                values += '(' + std::to_string(_p->GetGUID().GetCounter()) + ',' + std::to_string(uint32(_era)) + ',' +
+                          std::to_string(talentId) + ',' + std::to_string(uint32(rank)) + ')';
             }
-            CharacterDatabase.DirectExecute(
-                "REPLACE INTO era_character_talent (guid,eraId,talentId,`rank`) VALUES {}", values);
+            if (!values.empty())
+                statements.push_back("REPLACE INTO era_character_talent (guid,eraId,talentId,`rank`) VALUES " + values);
+            EraPersistence::Queue(std::move(statements));
         }
 
         // The single deferred reconcile for the whole build (TryLearn skipped its per-learn
@@ -190,10 +196,12 @@ namespace EraTalents
             return false;
         }
 
-        // EraFor, not EraFromIP: TryLearn is on the BOT build path (EraTalentBots::SpendBuild),
-        // and EraFromIP reads every bot as Vanilla — a TBC-band bot's learns would all fail
-        // "talent not in your era" the moment TBC trees ship (silent 0-point builds).
         EraId era = EraTalentBots::EraFor(p);
+        if (p->IsInCombat() || EraTransition::StoredEra(p) != era)
+        {
+            err = "wait until your earned era transition is complete and you leave combat";
+            return false;
+        }
         if (n->eraId != uint8(era))
         {
             err = "talent not in your era";
@@ -272,12 +280,12 @@ namespace EraTalents
         // thread (prod lag spikes, 2026-08-26).
         {
             std::lock_guard<std::mutex> guard(g_rankCacheMutex);
-            LoadRanks(p, era)[talentId] = newRank;   // released before learnSpell: its hooks re-read ranks
+            LoadRanks(p, era)[talentId] = newRank;
+            if (!InBotBuild(p))
+                EraPersistence::Queue({"REPLACE INTO era_character_talent (guid,eraId,talentId,`rank`) VALUES (" +
+                                       std::to_string(p->GetGUID().GetCounter()) + ',' + std::to_string(uint32(era)) +
+                                       ',' + std::to_string(talentId) + ',' + std::to_string(uint32(newRank)) + ')'});
         }
-        if (!InBotBuild(p))
-            CharacterDatabase.DirectExecute(
-                "REPLACE INTO era_character_talent (guid,eraId,talentId,`rank`) VALUES ({},{},{},{})",
-                p->GetGUID().GetCounter(), uint8(era), talentId, newRank);
 
         if (rank > 0 && uint32(rank - 1) < n->rankSpell.size() && n->rankSpell[rank - 1] != 0)
             p->removeSpell(n->rankSpell[rank - 1], SPEC_MASK_ALL, false);
@@ -318,13 +326,14 @@ namespace EraTalents
                 p->removeSpell(n->rankSpell[r - 1], SPEC_MASK_ALL, false);
         }
 
-        CharacterDatabase.DirectExecute("DELETE FROM era_character_talent WHERE guid={} AND eraId={}",
-                                        p->GetGUID().GetCounter(), uint8(era));
         // operator[] inserts an empty map when absent — "loaded, zero rows" is exactly the
         // post-reset state, so subsequent reads don't re-query.
         {
             std::lock_guard<std::mutex> guard(g_rankCacheMutex);
             g_rankCache[RankKey(p, era)].clear();
+            EraPersistence::Queue(
+                {"DELETE FROM era_character_talent WHERE guid=" + std::to_string(p->GetGUID().GetCounter()) +
+                 " AND eraId=" + std::to_string(uint32(era))});
         }
 
         // Symmetric with TryLearn: a respec away from VE must strip 932950 (Vanilla) / 948032 (TBC)
@@ -427,100 +436,25 @@ namespace EraTalents
             return false;
         }
 
-        // A spell that is baseline-obtainable starting some era but was talent-only before it.
-        // Two flavors, distinguished by grantHigherEra:
-        //   * AUTO-baseline (grantHigherEra = true, e.g. Holy Nova): from TBC on the core LEARNS
-        //     rank 1 automatically at minLevel, so we must force-grant it to a high-era character
-        //     that doesn't have it yet (and strip it from a Vanilla-without-talent character).
-        //   * TRAINER-baseline (grantHigherEra = false, e.g. Shield Slam / Ice Block / Divine
-        //     Spirit): from WotLK the trainer SELLS it ungated, but the character still has to buy
-        //     it. So in TBC/WotLK we do NOTHING (no force-grant, no strip — they train it normally);
-        //     we only strip it from a Vanilla character who hasn't spent the gating talent. This is
-        //     the "baseline-leak" case: without this gate a Vanilla character gets the spell from
-        //     the WotLK-era trainer rows without paying the talent it costs in Vanilla.
+        // Stock abilities that cost a talent in Vanilla. Later-era baseline availability is
+        // paid training; the earned trainer script blocks unavailable era variants before purchase.
         struct BaselineSpellGate
         {
-            uint8    classId;         // p->getClass()
-            uint32   talentId;        // the Vanilla-era talent that grants rankSpells[0]
-            uint32   rankSpells[8];   // 0 = unused slot (all ranks that must be stripped in Vanilla)
-            uint8    minLevel;        // AUTO-baseline: level the rank1 auto-learns. Ignored when !grantHigherEra.
-            bool     grantHigherEra;  // true = force-grant rank1 in TBC/WotLK; false = strip-only (trainer-baseline)
+            uint8 classId;
+            uint32 talentId;
+            uint32 rankSpells[8];
         };
 
-        static const BaselineSpellGate kBaselineSpellGates[] =
-        {
-            // Holy Nova: talent-only in Vanilla, AUTO-baseline (rank 1 level-learned) from TBC on.
-            { CLASS_PRIEST,  18121, { 15237, 15430, 15431 },                          20, true  },
-            // Baseline-leak gates (2026-08-18): talent-only in Vanilla, TRAINER-baseline in WotLK.
-            // grantHigherEra=TRUE, same as Holy Nova: their ungated rank-1 trainer rows are DELETED
-            // (SQL 2026_08_18_21_era_talent_baseline_gate_trainers.sql) so the trainer no longer offers
-            // them to a Vanilla character — the ORIGINAL strip-only approach (grantHigherEra=false, no
-            // trainer edit) leaked because the trainer still LISTED the spell. With rank 1 removed from
-            // the trainer, WotLK-stage chars must get it here at the spell's level (then train the higher
-            // ranks, which chain ReqAbility1 on rank 1); a Vanilla char gets rank 1 only from the talent.
-            // Shield Slam: WOTLK-ONLY force-grant as of the final review R7 (2026-09-06). Neither
-            // managed era grants a stock rank any more — Vanilla node 18552 grants the clone chain
-            // 932841-932844 and TBC node 20362 grants 947541-947546, because every rank either era
-            // can reach ships the WotLK damage (r1 294-308 vs 225-235, and so on up). Both managed
-            // eras therefore strip this whole rank list UNCONDITIONALLY in the CLASS_WARRIOR arm (4);
-            // the row survives for its `era >= ERA_TBC` half, which force-grants stock r1 at L40 to a
-            // WotLK-stage warrior whose ungated rank-1 trainer row is globally deleted, and for its
-            // rank LIST, which arm (4) reads so the two can never drift apart. The TBC skip guard in
-            // the walker below is matched by a Vanilla one only in effect: Vanilla falls into the
-            // walker's `else` (strip when the talent is unspent), which is a strict subset of arm
-            // (4)'s unconditional strip, so no extra guard is needed.
-            { CLASS_WARRIOR, 18552, { 23922, 23923, 23924, 23925, 25258, 30356, 47487, 47488 }, 40, true  },
-            // Ice Block: node 18046 grants stock 45438 (single rank) in Vanilla; auto-learned at L30 in WotLK.
-            { CLASS_MAGE,    18046, { 45438 },                                        30, true  },
-            // Divine Spirit (single-target chain only): node 18113 grants stock rank 1 (14752) in Vanilla;
-            // auto-learned at L30 in WotLK.
-            { CLASS_PRIEST,  18113, { 14752, 14818, 14819, 27841, 25312, 48073 },     30, true  },
-            // Prayer of Spirit (the raid version, 27681/32999/48074): its trainer_spell rows chain
-            // ReqAbility1 = Divine Spirit rank 1 (14752), so it is only trainable by a priest who has the
-            // Divine Spirit TALENT (which grants 14752). Keyed on the SAME talent 18113 with
-            // grantHigherEra=FALSE (strip-only): a Vanilla priest WITHOUT the Divine Spirit talent loses
-            // any Prayer of Spirit ranks (and can't train them — no 14752), a Vanilla priest WITH the
-            // talent keeps them, and a TBC+ priest is untouched (Prayer of Spirit stays freely trainable
-            // behind baseline Divine Spirit). This gates the raid buff to the talent per the design intent
-            // — it is the group half of Divine Spirit, so it lives and dies with that talent.
-            { CLASS_PRIEST,  18113, { 27681, 32999, 48074 },                          60, false },
-            // Consecration (2026-08-18, Paladin Holy node 18606): talent-only in Vanilla, TRAINER-baseline
-            // in WotLK (rank 1 = 26573, trained at L20, ReqAbility1=0 = ungated). Its rank-1 trainer row is
-            // DELETED (2026_08_18_32_era_talent_paladin_baseline_gate_trainers.sql) so the trainer no longer
-            // offers it; WotLK-stage paladins auto-learn rank 1 here at L20 (then train the higher ranks
-            // 20116/20922/... which chain ReqAbility1 on 26573). A Vanilla paladin gets rank 1 only from the
-            // talent grant. Same grantHigherEra=true pattern as Shield Slam / Divine Spirit.
-            { CLASS_PALADIN, 18606, { 26573, 20116, 20922, 20923, 20924, 27173, 48818, 48819 }, 20, true  },
-            // Blessing of Kings (2026-08-18, Paladin Protection node 18620): talent-only in Vanilla,
-            // TRAINER-baseline in WotLK (20217, trained at L20, ReqAbility1=0 = ungated). Single rank
-            // (no higher-rank chain). Its ungated trainer row is DELETED in
-            // 2026_08_18_32_era_talent_paladin_baseline_gate_trainers.sql so the trainer no longer
-            // offers it; WotLK-stage paladins auto-learn it here at L20. A Vanilla paladin gets it only
-            // from the talent grant (node 18620). Same grantHigherEra=true pattern as Consecration.
-            { CLASS_PALADIN, 18620, { 20217 },                                        20, true  },
-            // Greater Blessing of Kings (2026-08-18, same Paladin Protection node 18620): a SEPARATE
-            // stock chain from BoK 20217. In WotLK GBoK is a real baseline trainer spell (SpellLevel 60,
-            // aura 137 = +10% all stats), but its `trainer_spell` rows (TrainerIds 3/4/5) carry
-            // ReqAbility1=0 (ungated) at ReqLevel 60, so a Vanilla-era paladin could TRAIN it without the
-            // BoK talent — the same leak as 20217. In Vanilla, Greater Blessing of Kings did NOT exist as
-            // a trainable baseline (it was the reagent/talent-gated raid version), so a Vanilla paladin
-            // WITHOUT the BoK talent must not have it. Its ungated trainer rows are DELETED in
-            // 2026_08_18_32_era_talent_paladin_baseline_gate_trainers.sql. This is its OWN gate row (not
-            // merged into the 20217 row) because the force-grant path only grants rankSpells[0] at
-            // minLevel: GBoK's real learn level is 60, not 20, so it needs its own minLevel to be granted
-            // back to WotLK-stage paladins at L60 (folding it into the L20 row would grant only 20217 and
-            // silently drop GBoK for WotLK paladins). Keyed on the same talent 18620 so the Vanilla strip
-            // fires exactly when the BoK talent is absent. 25898 is NOT a node grant (not in
-            // era_talent_rank), so the generic orphan strip never touches it — this gate solely owns it.
-            { CLASS_PALADIN, 18620, { 25898 },                                        60, true  },
-            // Faerie Fire (Feral) (2026-08-21, Druid Feral node 18729): talent-only in Vanilla, but the
-            // druid trainer (Id 33) taught stock 16857 at L18 with ReqAbility1=0 (ungated) — a Vanilla
-            // druid could train the debuff without the talent (the leak). Its trainer row is DELETED
-            // (2026_08_21_00_era_talent_druid_ng_trainer.sql), so WotLK-stage druids auto-learn 16857
-            // here at L18 (grantHigherEra=true, same as Consecration/Shield Slam); a Vanilla druid gets it
-            // ONLY from the talent grant (node 18729 grants 16857). 16857 is also a node grant, so the
-            // generic orphan strip covers a respec too. Single rank (no higher-rank chain).
-            { CLASS_DRUID,   18729, { 16857 },                                        18, true  },
+        static const BaselineSpellGate kBaselineSpellGates[] = {
+            {CLASS_PRIEST, 18121, {15237, 15430, 15431}},
+            {CLASS_WARRIOR, 18552, {23922, 23923, 23924, 23925, 25258, 30356, 47487, 47488}},
+            {CLASS_MAGE, 18046, {45438}},
+            {CLASS_PRIEST, 18113, {14752, 14818, 14819, 27841, 25312, 48073}},
+            {CLASS_PRIEST, 18113, {27681, 32999, 48074}},
+            {CLASS_PALADIN, 18606, {26573, 20116, 20922, 20923, 20924, 27173, 48818, 48819}},
+            {CLASS_PALADIN, 18620, {20217}},
+            {CLASS_PALADIN, 18620, {25898}},
+            {CLASS_DRUID, 18729, {16857}},
         };
     }
 
@@ -555,6 +489,9 @@ namespace EraTalents
 
         if (!p)
             return;
+
+        // A variant swap needs a spell already acquired, never just a sufficient level.
+        EraEarnedTraining::Restore(p, era, EraEarnedTraining::Snapshot(p));
 
         // Warlock marker chain (TBC Phase 8, 2026-09-05). FOUR markers, replacing the old two-marker
         // Vanilla/non-Vanilla split. Each is a hidden passive with a CLIENT row (the Blizzard trainer UI
@@ -1283,10 +1220,6 @@ namespace EraTalents
             // later task); its r2-6 (946028-032) chain off the talent-granted r1 in the trainer SQL, not
             // the marker (mirrors Vanilla SoC 932606 + 932750-753).
             struct TbcSealGrant { uint32 spell; uint8 level; };
-            static const TbcSealGrant kTbcPalReusedGrants[] = {
-                { 932746,  4 },                                                  // the single Judgement (REUSED)
-                { 932668, 10 }, { 932669, 30 }, { 932670, 50 },                  // Lay on Hands r1-3 (REUSED)
-            };
             // TBC faction DPS seals (Task 5d): SoB (946080, Horde/BE) is trained ONLY at the Horde
             // paladin trainers (TrainerId 4) and SoV (946084, Alliance) ONLY at the Alliance trainers
             // (TrainerId 3) — so a HUMAN sees only the faction-appropriate seal (trainer reachability).
@@ -1322,9 +1255,7 @@ namespace EraTalents
                 for (uint32 s : kStockPalSwap)
                     if (p->HasSpell(s))
                         p->removeSpell(s, SPEC_MASK_ALL, false);
-                for (const TbcSealGrant& g : kTbcPalReusedGrants)
-                    if (p->GetLevel() >= g.level && !p->HasSpell(g.spell))
-                        p->learnSpell(g.spell);
+                // Shared Judgement and Lay on Hands remain paid trainer offerings.
 
                 // Faction gate (Task 5d): strip the WRONG-faction DPS seal. Shared with the bot login
                 // path (StripWrongFactionTbcPalSeal) — this mid-build call is a no-op for a bot (it
@@ -1339,7 +1270,7 @@ namespace EraTalents
                 // in TBC (the g.talentId==18620 guard) so its WotLK auto-grant can't leak BoK as baseline.
                 {
                     bool bokNode = CurrentRank(p, ERA_TBC, 20025) != 0;
-                    static const TbcSealGrant kTbcBoK[] = { { 20217, 20 }, { 25898, 60 } };
+                    static const TbcSealGrant kTbcBoK[] = {{20217, 20}};
                     for (const TbcSealGrant& b : kTbcBoK)
                     {
                         if (bokNode && p->GetLevel() >= b.level && !p->HasSpell(b.spell))
@@ -1351,34 +1282,10 @@ namespace EraTalents
             }
             else
             {
-                // Stock seals/judgements/LoH: trainer rows were deleted, so a WotLK paladin can no longer TRAIN
-                // them; auto-grant by level instead (the Holy-Nova/Shield-Slam grantHigherEra precedent). 20154/
-                // 20271 are core-auto-learned but re-granted here so a Vanilla->WotLK transition restores them
-                // immediately. Levels are the real stock trainer ReqLevel / Spell.dbc SpellLevel (confirmed via
-                // azerothcore-wotlk/ip-dbc/Spell.dbc + data/sql/base/db_world/trainer_spell.sql for every id).
-                struct StockGrant { uint8 level; uint32 spell; };
-                static const StockGrant kWotlkPalStock[] = {
-                    { 3, 20154 }, { 4, 21084 }, { 22, 20164 }, { 30, 20165 }, { 38, 20166 },
-                    { 4, 20271 }, { 28, 53407 }, { 12, 53408 },
-                    { 10, 633 }, { 30, 2800 }, { 50, 10310 }, { 69, 27154 },
-                };
-                for (const StockGrant& r : kWotlkPalStock)
-                    if (p->GetLevel() >= r.level && !p->HasSpell(r.spell))
-                        p->learnSpell(r.spell);
-
-                // Stock WotLK Seal of Vengeance (31801, Alliance) / Seal of Corruption (53736,
-                // Horde): their ungated trainer rows are deleted (2026_08_30_00), so a WotLK
-                // paladin gets the faction-appropriate seal by level instead (stock trainer
-                // ReqLevel 64); the wrong-faction one is stripped for hygiene.
-                {
-                    bool horde = p->GetTeamId() == TEAM_HORDE;
-                    uint32 sealGrant = horde ? 53736u : 31801u;
-                    uint32 sealOther = horde ? 31801u : 53736u;
-                    if (p->GetLevel() >= 64 && !p->HasSpell(sealGrant))
-                        p->learnSpell(sealGrant);
-                    if (p->HasSpell(sealOther))
-                        p->removeSpell(sealOther, SPEC_MASK_ALL, false);
-                }
+                // Wrath spells remain paid training. Known variants are restored above.
+                uint32 sealOther = p->GetTeamId() == TEAM_HORDE ? 31801u : 53736u;
+                if (p->HasSpell(sealOther))
+                    p->removeSpell(sealOther, SPEC_MASK_ALL, false);
             }
 
             // Holy Shock grant change (Fix 3): node 18614 now grants the era clone 932646 (dual
@@ -1473,41 +1380,11 @@ namespace EraTalents
                         if (p->HasSpell(s))
                             p->removeSpell(s, SPEC_MASK_ALL, false);
                 }
-                else
-                {
-                    struct StockGrant { uint8 level; uint32 spell; };
-                    static const StockGrant kWotlkDruidNG[] = {
-                        { 10, 16689 }, { 18, 16810 }, { 28, 16811 }, { 38, 16812 },
-                        { 48, 16813 }, { 58, 17329 }, { 68, 27009 }, { 78, 53312 },
-                    };
-                    for (const StockGrant& r : kWotlkDruidNG)
-                        if (p->GetLevel() >= r.level && !p->HasSpell(r.spell))
-                            p->learnSpell(r.spell);
-                }
             }
 
-            // (3) Enrage version-swap (no talent gate — pure obtain swap like paladin Lay on Hands). The
-            //     stock 5229 trainer row is DELETED globally (2026_08_21_00 SQL). Custom 932513 = the
-            //     Vanilla Enrage (20 rage over 10s, no built-in instant chunk); stock 5229 = the WotLK
-            //     Enrage (10 over time + 20 instant). Both are baseline (L12), so grant/strip by level:
-            //       * Vanilla AND TBC: grant 932513 at L12, strip stock 5229. This is the ONE druid row
-            //         where TBC genuinely REUSES the Vanilla clone: Task 3's survival map found the TBC
-            //         2.4.3 Enrage byte-identical to the Vanilla one this clone reconstructs (Amendment
-            //         A.3's reuse ledger; the armor-drawback omission stays an accepted gap, spec §6.3).
-            //       * WotLK: grant stock 5229 at L12 (trainer row deleted). The custom 932513 is not
-            //         stripped here — the generic band sweep below owns that strip now (Task 5).
-            if (era == ERA_VANILLA || era == ERA_TBC)
-            {
-                if (p->GetLevel() >= 12 && !p->HasSpell(932513))
-                    p->learnSpell(932513);
-                if (p->HasSpell(5229))
-                    p->removeSpell(5229, SPEC_MASK_ALL, false);
-            }
-            else
-            {
-                if (p->GetLevel() >= 12 && !p->HasSpell(5229))
-                    p->learnSpell(5229);
-            }
+            // Enrage is paid training in each era, with swaps only from acquired spells.
+            if ((era == ERA_VANILLA || era == ERA_TBC) && p->HasSpell(5229))
+                p->removeSpell(5229, SPEC_MASK_ALL, false);
 
             // (4) Omen of Clarity grant change: node 18708 grants the custom castable clone 932512
             //     (Vanilla 10-min activated buff) instead of stock 16864 (WotLK hidden passive). A druid
@@ -1697,13 +1574,6 @@ namespace EraTalents
             // knows any era's clone, or completed a granting quest (all races). Higher ranks stay
             // trainer-taught (their stock/clone counterparts have rows rooted on r1 — 6363 roots on
             // 3599, so a missing 3599 also bricks the whole TBC/WotLK Searing chain).
-            // tbcId 0 = TBC keeps the stock id.
-            struct QuestTotem { uint32 stockId; uint32 vanillaId; uint32 tbcId; uint32 quests[3]; };
-            static const QuestTotem kQuestTotems[] = {
-                { 8071, 931020, 947020, { 1518, 1521, 9451 } },  // Stoneskin      <- Call of Earth (Orc/Tauren/Draenei)
-                { 3599, 931100,      0, { 1527, 9555,    0 } },  // Searing        <- Call of Fire   (TBC/WotLK: stock)
-                { 5394, 931180, 947170, {   96, 9509,    0 } },  // Healing Stream <- Call of Water
-            };
             auto grantQuestTotems = [&](EraId e)
             {
                 for (auto const& qt : kQuestTotems)
@@ -1833,104 +1703,16 @@ namespace EraTalents
             }
         }
 
-        // Generic baseline-spell gate table — runs for ALL classes (each row self-selects on its
-        // own classId). Hoisted above the priest-only tail below so the WARRIOR/MAGE baseline-leak
-        // gates fire too; the priest Holy Nova entry behaves exactly as before.
-        for (const BaselineSpellGate& g : kBaselineSpellGates)
+        // Talent-owned stock spells disappear on a paid respec. Later-era baseline
+        // acquisition stays with paid training and the matching era talent gates.
+        for (BaselineSpellGate const& g : kBaselineSpellGates)
         {
-            if (g.classId != p->getClass())
+            if (g.classId != p->getClass() || era != ERA_VANILLA)
                 continue;
-
-            // Blessing of Kings / Greater BoK (both keyed on Vanilla talent 18620) are TRAINER-baseline
-            // in WotLK but remain a TALENT in TBC (node 20025). Skip their WotLK-style force-grant for a
-            // TBC paladin — the CLASS_PALADIN TBC arm above node-gates them; the generic auto-grant would
-            // otherwise leak BoK as baseline. Consecration (talent 18606) IS baseline in TBC and is
-            // untouched by this guard.
-            if (era == ERA_TBC && g.classId == CLASS_PALADIN && g.talentId == 18620)
-                continue;
-
-            // Faerie Fire (Feral) (keyed on Vanilla druid talent 18729) is likewise still a TALENT in
-            // TBC (node 20133), not baseline until WotLK. Skip its WotLK-style force-grant for a TBC
-            // druid — the CLASS_DRUID TBC arm (5) above node-gates it (strip when 20133 is unspent),
-            // exactly as the paladin BoK guard defers to the CLASS_PALADIN TBC arm.
-            // Readiness-gated on the SAME predicate arm (5) uses: while node 20133 is a display-only
-            // seed there is no talent that can grant 16857, so skipping the force-grant here would take
-            // FF(Feral) away from every TBC druid with nothing to replace it. Until the node is wired,
-            // TBC keeps the WotLK-style force-grant below (i.e. today's shipped behavior).
-            if (era == ERA_TBC && g.classId == CLASS_DRUID && g.talentId == 18729 &&
-                EraNodeIsWired(ERA_TBC, CLASS_DRUID, 20133))
-                continue;
-
-            // Shield Slam (keyed on Vanilla warrior talent 18552) is likewise still a TALENT in TBC
-            // (node 20362), not baseline until WotLK — but with a twist the paladin/druid guards above
-            // do not have: TBC node 20362 grants a CLONE chain (947541-947546), never the stock ranks
-            // (spec Amendment A.2 — every TBC-reachable stock rank's damage diverges). So for a TBC
-            // warrior this row is wrong in BOTH directions: the force-grant would hand out stock r1 at
-            // L40 for free and unlock the stock trained chain behind it (the one real baseline leak in
-            // the warrior tree, era-data/_ref/tbc/warrior-spells.yaml baseline_leaks), and the strip
-            // must fire regardless of whether the node is spent. Skip the row here; the CLASS_WARRIOR
-            // arm (4) above owns the (unconditional) TBC strip, exactly as this guard defers to the
-            // CLASS_DRUID / CLASS_PALADIN TBC arms.
-            // Readiness-gated on the SAME predicate that arm uses: while node 20362 is a display-only
-            // seed there is no talent that can grant Shield Slam, so skipping the force-grant would
-            // take it away from every TBC warrior with nothing to replace it. Until the TBC chain is
-            // authored, TBC keeps the WotLK-style force-grant below (i.e. today's shipped behavior).
-            if (era == ERA_TBC && g.classId == CLASS_WARRIOR && g.talentId == 18552 &&
-                EraReplacementSpellReady(ERA_TBC, 947541) && EraNodeIsWired(ERA_TBC, CLASS_WARRIOR, 20362))
-                continue;
-
-            // Holy Nova (keyed on Vanilla priest talent 18121) is still a TALENT in TBC (node 20527),
-            // not baseline until WotLK. Skip its WotLK-style force-grant for a TBC priest — the
-            // CLASS_PRIEST TBC block below node-gates it (strip when 20527 is unspent), exactly as
-            // the druid Faerie Fire (Feral) guard defers to arm (5). Readiness-gated: while 20527 is
-            // a display-only seed, TBC keeps today's shipped force-grant.
-            if (era == ERA_TBC && g.classId == CLASS_PRIEST && g.talentId == 18121 &&
-                EraNodeIsWired(ERA_TBC, CLASS_PRIEST, 20527))
-                continue;
-
-            // Divine Spirit + Prayer of Spirit (BOTH rows keyed on Vanilla priest talent 18113) are
-            // still a TALENT in TBC (node 20513) — and, like Shield Slam, the TBC node grants a CLONE
-            // chain (948024-948030), never the stock ranks: live 14752 lost the two hidden effects
-            // (aura 174/175 at base 0) that TBC Improved Divine Spirit 33174/33182 spellmods
-            // (SPELLMOD_EFFECT2/3), so a stock grant can never carry Improved DS. The force-grant
-            // would hand out stock r1 at L30 AND unlock the stock trained chain behind it (and Prayer
-            // of Spirit behind that). Skip both rows; the CLASS_PRIEST TBC block owns the
-            // unconditional strip. Gated via EraNodeReplacesStock so the guard arms only once node
-            // 20513 actually grants a NON-stock replacement — a half-authored state where 948024
-            // exists but the node still grants stock 14752 must not skip the force-grant with nothing
-            // to replace it.
-            // Helper ids 948024-948033 are FIXED by the plan; Tasks 6-8 must allocate exactly these
-            // or update this site in the same commit.
-            if (era == ERA_TBC && g.classId == CLASS_PRIEST && g.talentId == 18113 &&
-                EraNodeReplacesStock(ERA_TBC, CLASS_PRIEST, 20513, 14752))
-                continue;
-
-            if (era >= ERA_TBC)
-            {
-                // grantHigherEra=true (Holy Nova, and now Shield Slam/Ice Block/Divine Spirit whose
-                // ungated rank-1 trainer rows were deleted): force-grant rank 1 once the player is high
-                // enough level, since the trainer no longer offers it; the player then trains the higher
-                // ranks (which chain ReqAbility1 on rank 1). A grantHigherEra=false gate would be
-                // strip-only here (left for a future spell that stays freely trainable in higher eras).
-                if (!g.grantHigherEra)
-                    continue;
-                uint32 rank1 = g.rankSpells[0];
-                if (rank1 != 0 && p->GetLevel() >= g.minLevel && !p->HasSpell(rank1))
-                    p->learnSpell(rank1);
-            }
-            else
-            {
-                // Vanilla: talent-only. If the era talent hasn't been learned, strip any ranks
-                // the player somehow has (e.g. carried over from an era transition, or bought from
-                // the WotLK-era trainer rows — the baseline leak). If the talent IS learned, leave
-                // the spells alone — the talent grants rank 1 and the player can train the rest.
-                if (CurrentRank(p, ERA_VANILLA, g.talentId) == 0)
-                {
-                    for (uint32 spell : g.rankSpells)
-                        if (spell != 0 && p->HasSpell(spell))
-                            p->removeSpell(spell, SPEC_MASK_ALL, false);
-                }
-            }
+            if (CurrentRank(p, ERA_VANILLA, g.talentId) == 0)
+                for (uint32 spell : g.rankSpells)
+                    if (spell && p->HasSpell(spell))
+                        p->removeSpell(spell, SPEC_MASK_ALL, false);
         }
 
         // Generic band sweep (Phase 9.5) runs for ALL classes, after every strip arm above (the priest

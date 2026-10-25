@@ -21,31 +21,22 @@ void EraMasterDemonologist_OnLevelUp(Player* wl);
 
 namespace
 {
-    // Real players only: bots are out of scope for era talents. Skipping them avoids the pin
-    // touching a bot's factory talents and — critically — stops a bot that crosses an era band
-    // (e.g. via mod-raid-roster's era-sync) from hitting resetTalents and losing its talents.
-    // The SESSION flag is mandatory here: PlayerbotHolder attaches the bot AI only AFTER core
-    // login completes, so GET_PLAYERBOT_AI is null for every bot inside OnPlayerLogin — the
-    // player branch then ran for every bot login (EraFromIP reads bots as Vanilla), stripping
-    // native talents from 61+ bots and reconciling them against the wrong era (91 bots
-    // stripped in one boot, live 2026-08-26). mod-playerbots' own OnPlayerLogin script guards
-    // with the same session test for exactly this reason.
-    // Same session-flag-first semantics as EraTalentBots::IsBot (see the comment above);
-    // the null case keeps its local meaning: a null player takes the bot (skip) branch.
-    bool IsBot(Player* p) { return !p || EraTalentBots::IsBot(p); }
+// Session flags identify bots during login before their AI object is attached.
+bool IsBot(Player* p) { return p && EraTalentBots::IsBot(p); }
+bool EnabledFor(Player* p)
+{
+    return p && sEraTalentsConfig->Enabled() && (!IsBot(p) || sEraTalentsConfig->BotTalents());
+}
 
-    // Per-player throttle for the mid-session era check (see OnPlayerUpdate). Holds real players
-    // only (bots are skipped before this is touched); cleared on logout. Mutex-guarded:
-    // OnPlayerUpdate runs inside Map::Update, and players on DIFFERENT maps tick on parallel
-    // MapUpdater threads — an unlocked shared map here is the same rehash race that segfaulted
-    // prod via EraTalentBots' resolve cache (2026-08-26); few players kept the odds low, not zero.
-    std::unordered_map<ObjectGuid, uint32> g_checkTimer;
-    std::mutex g_checkTimerMutex;
-    constexpr uint32 kCheckIntervalMs = 2000;
+// Map updates run in parallel. The only per-tick shared state is this protected timer;
+// progression and talent ranks are read from caches preloaded at world startup.
+std::unordered_map<ObjectGuid, uint32> g_checkTimer;
+std::mutex g_checkTimerMutex;
+constexpr uint32 kCheckIntervalMs = 2000;
 
-    // Two-Handed Axes and Maces (node 18822) grants proficiency clone 932406; the weapon-gate hook
-    // below reads it via HasSpell to decide whether a Vanilla shaman may equip a 2H axe/mace.
-    constexpr uint32 SPELL_ERA_TWO_HANDED_AXES_MACES = 932406;
+// Two-Handed Axes and Maces (node 18822) grants proficiency clone 932406; the weapon-gate hook
+// below reads it via HasSpell to decide whether a Vanilla shaman may equip a 2H axe/mace.
+constexpr uint32 SPELL_ERA_TWO_HANDED_AXES_MACES = 932406;
 }
 
 class era_talent_pin : public PlayerScript
@@ -55,31 +46,30 @@ public:
 
     void OnPlayerLogin(Player* p) override
     {
-        if (!sEraTalentsConfig->Enabled())
+        if (!EnabledFor(p))
             return;
-        if (IsBot(p))
-        {
-            EraTalentBots::OnBotLogin(p);   // gated internally on EraTalents.BotTalents
-            return;
-        }
         EraId stored = EraTransition::StoredEra(p);
         EraId now = EraFromIP(p);
-        EraTransition::Run(p, stored, now);          // resets ONLY on a crossing; always persists the stamp
-        if (now == stored && EraHasTalentTrees(now))
+        EraTransition::Run(p, stored, now);
+        if (EraHasTalentTrees(p, now))
         {
-            EraTransition::StripNativeTalents(p, now); // pre-mod chars: first sighting stamped with no reset
-            EraTalents::ReapplyOnLogin(p, now);      // re-grant persisted passives after a plain login
+            EraTransition::StripNativeTalents(p, now);
+            if (now == stored)
+                EraTalents::ReapplyOnLogin(p, now);
         }
-        EraTalents::ReconcileBaselineSpells(p, now); // unconditional: must also run for WotLK priests
+        if (IsBot(p))
+            EraTalentBots::OnBotLogin(p);
+        else
+            EraTalents::ReconcileBaselineSpells(p, now);
         pin(p, now);
     }
 
     // Mid-session era changes that are NOT level-ups (a GM `.ip set`, or a progression milestone
-    // like a boss kill) aren't caught by the login/level hooks. Poll cheaply per real player and
+    // like a boss kill) aren't caught by the login/level hooks. Poll the cached state for humans and bots and
     // reconcile within a couple seconds so the talents transition without a relog.
     void OnPlayerUpdate(Player* p, uint32 diff) override
     {
-        if (!sEraTalentsConfig->Enabled() || IsBot(p) || !p->IsInWorld())
+        if (!EnabledFor(p) || !p->IsInWorld())
             return;
         {
             std::lock_guard<std::mutex> guard(g_checkTimerMutex);
@@ -89,7 +79,11 @@ public:
                 return;
             acc = 0;   // reference dies with this scope — nothing escapes the lock
         }
-        EraTransition::Detect(p);                    // Run (in-combat: defers, flushed on leave-combat)
+        bool crossed = EraTransition::Detect(p);
+        if (EraTransition::StoredEra(p) != EraFromIP(p))
+            return;  // preserve the old combat build until the earned crossing can apply
+        if (crossed && IsBot(p))
+            EraTalentBots::OnBotLevelChanged(p);
 
         // The core re-teaches skill-reward auto-learn seals (e.g. Seal of Righteousness 20154 on skill
         // 594) every login; the login-time reconcile strips them server-side, but removeSpell can't
@@ -97,8 +91,7 @@ public:
         // Re-strip them here in-world (packets flow now) so the client updates. Fires once per login
         // (once stripped, the core doesn't re-teach until the next login), then no-ops.
         // A TBC paladin also runs the reconstructed seal substrate (reused Vanilla clones), so it too
-        // must clear the core's re-taught stock-seal phantoms. Bots return above (IsBot), so EraFromIP
-        // is the correct era source on this player-only path.
+        // must clear the core's re-taught stock-seal phantoms. Every character uses earned IP state.
         if (p->getClass() == CLASS_PALADIN && (EraFromIP(p) == ERA_VANILLA || EraFromIP(p) == ERA_TBC))
             for (uint32 s : { 20154u, 20164u, 20165u, 20166u, 20271u, 53407u, 53408u, 633u, 2800u, 10310u, 27154u })
                 if (p->HasSpell(s))
@@ -136,21 +129,17 @@ public:
 
     void OnPlayerLevelChanged(Player* p, uint8 /*old*/) override
     {
-        if (!sEraTalentsConfig->Enabled())
+        if (!EnabledFor(p))
+            return;
+        EraTransition::Detect(p);
+        if (EraTransition::StoredEra(p) != EraFromIP(p))
             return;
         if (IsBot(p))
-        {
-            EraTalentBots::OnBotLevelChanged(p);   // band crossings + new-point spend
-            return;
-        }
-        EraTransition::Detect(p);                    // a level-up can cross an era boundary
-        EraTalents::ReconcileBaselineSpells(p, EraFromIP(p)); // e.g. a priest dinging 20 gets rank 1
-        EraMasterDemonologist_OnLevelUp(p);          // re-scale the level-dependent Felhunter resist branch
-        // A same-era level-up changes the available point count (level-9-spent) but Detect no-ops
-        // when the era is unchanged, so push a fresh SYNC here or the addon's point count goes stale.
-        // Only a managed era has a live point count to refresh (a crossing into/out of one already
-        // SYNCs via Detect->Run).
-        if (EraHasTalentTrees(EraFromIP(p)))
+            EraTalentBots::OnBotLevelChanged(p);
+        else
+            EraTalents::ReconcileBaselineSpells(p, EraFromIP(p));
+        EraMasterDemonologist_OnLevelUp(p);
+        if (EraHasTalentTrees(p, EraFromIP(p)))
             EraTalentsComms::SendSync(p);
     }
 
@@ -216,33 +205,24 @@ public:
               // Vanilla/TBC reconcile arms strip them and the WotLK arm strips nothing, so a
               // legitimate WotLK purchase is untouched and reconcile never learns either id.
               3043, 19263 };
-        if (!sEraTalentsConfig->Enabled() || !kReconcileOnLearn.count(spellID))
+        if (!EnabledFor(p))
             return;
-        if (IsBot(p))
-        {
-            if (!p || !sEraTalentsConfig->BotTalents())
-                return;   // IsBot(null)==true; knob off = today's native-bot behavior byte-for-byte
-            // BOTS reach here too (Plan 3b Task 8, 2026-09-02): PlayerbotFactory::InitClassSpells
-            // HARDCODES learnSpell(8071/3599/5394) as shaman essentials, and it runs AFTER
-            // InitTalentsTree's era reconcile — so an era-managed shaman bot re-acquired three
-            // stock WotLK rank-1 totems and the by-id AI bridge (HasSpell-first) cast the stock
-            // version over the era clone until the next login/level reconcile. The old blanket
-            // IsBot bail existed for build-churn perf, but the set-membership check above already
-            // makes this fire only on the handful of gated ids (~3 per shaman build). Era via
-            // EraFor (level band), NEVER EraFromIP — every bot reads Vanilla there. The cache
-            // invalidation keeps the resolve bridge from serving a pre-strip stock id.
-            EraTalents::ReconcileBaselineSpells(p, EraTalentBots::EraFor(p));
-            EraTalentBots::InvalidateSpecCache(p);
+        // A paid custom trainer rank may replace a cached miss or an older spell variant.
+        EraTalentBots::InvalidateSpecCache(p);
+        if (!kReconcileOnLearn.count(spellID))
             return;
-        }
-        EraTalents::ReconcileBaselineSpells(p, EraFromIP(p));
+        // During a deferred combat crossing reconcile against the tree actually still in use.
+        EraTalents::ReconcileBaselineSpells(p, EraTransition::StoredEra(p));
     }
 
     void OnPlayerLeaveCombat(Player* p) override
     {
-        if (!sEraTalentsConfig->Enabled() || IsBot(p))
+        if (!EnabledFor(p))
             return;
-        EraTransition::FlushCombat(p);               // apply a transition deferred during combat
+        EraId before = EraTransition::StoredEra(p);
+        EraTransition::FlushCombat(p);
+        if (IsBot(p) && before != EraTransition::StoredEra(p))
+            EraTalentBots::OnBotLevelChanged(p);
     }
 
     void OnPlayerLogout(Player* p) override
@@ -252,69 +232,82 @@ public:
             g_checkTimer.erase(p->GetGUID());        // don't leak timer entries for logged-out players
         }
         EraTalentBots::OnLogout(p);                  // drop the bot spec-tab cache entry (cheap erase)
-        EraTalents::EvictCache(p);                   // drop the rank cache (re-loaded on next login)
+        EraTransition::OnLogout(p);
+    }
+
+    void OnPlayerDelete(ObjectGuid guid, uint32 /*accountId*/) override
+    {
+        EraTalents::DeleteCache(guid.GetCounter());
+        EraTransition::DeleteCache(guid.GetCounter());
     }
 
     // GM ".level"/normal level-up re-grants points AFTER this hook; defer the zero one tick so it wins.
     void OnPlayerFreeTalentPointsChanged(Player* p, uint32 points) override
     {
-        if (!sEraTalentsConfig->Enabled() || IsBot(p) || points == 0 || !p->IsInWorld())
+        if (!EnabledFor(p) || points == 0 || !p->IsInWorld())
             return;
-        if (!EraHasTalentTrees(EraFromIP(p)))
-            return;                                  // WotLK, and any era whose trees aren't built yet (TBC): keep native points
+        if (!EraTalentBots::IsEraManaged(p))
+            return;
         ObjectGuid guid = p->GetGUID();
         p->m_Events.AddEventAtOffset([guid]()
         {
             if (Player* pl = ObjectAccessor::FindPlayer(guid))
-            {
-                pl->SetFreeTalentPoints(0);
-                pl->SendTalentsInfoData(false);
-            }
+                if (EnabledFor(pl) && EraTalentBots::IsEraManaged(pl))
+                {
+                    pl->SetFreeTalentPoints(0);
+                    pl->SendTalentsInfoData(false);
+                }
         }, Milliseconds(1));
     }
 
-    // Trainer-driven era respec (spec 2026-08-25-era-talents-trainer-reset-design.md).
-    // Player::resetTalents() fires this hook as its FIRST statement — before the
-    // m_usedTalentCount == 0 early-out — so it reaches us on the exact trainer path
-    // (MSG_TALENT_WIPE_CONFIRM -> resetTalents(false)) even though an era character has zero
-    // native talents. The core then early-outs: it never charges, never resets, never casts the
-    // untalent visual — this hook does all three for a managed-era character. The charge is
-    // exactly resetTalentsCost() — what the trainer's confirm dialog displayed (the core's
-    // escalation counter is private and never advances for a character with 0 native talents,
-    // so this is effectively a flat 1g — the dialog-truthful choice, user-approved).
-    // Re-entrancy (EraTransition::Run's own resetTalents(true) calls) needs no flag:
-    //   * entering a managed era: its rows were wiped when it was last left -> SpentPoints == 0;
-    //   * leaving one: EraFromIP is already the new native era -> EraHasTalentTrees bails.
-    // noCost callers (GM .reset talents, AT_LOGIN_RESET_TALENTS) reset era talents free — the
-    // intended semantics of those paths.
+    bool OnPlayerCanLearnTalent(Player* p, TalentEntry const* /*talent*/, uint32 /*rank*/) override
+    {
+        // Reject the native packet before it can spend a temporarily regranted core point.
+        // IsEraManaged also covers an old historical tree pending its out-of-combat transition.
+        return !EnabledFor(p) || !EraTalentBots::IsEraManaged(p);
+    }
+
+    // The native trainer dialog and custom tree use the same historical 1g/5g/10g/.../50g
+    // counter, including monthly decay. RecordTalentReset updates its normal persisted state.
+    // Internal era transitions suppress this hook while they clear native talent plumbing;
+    // only an explicit paid trainer reset or a core no-cost administrative reset reaches here.
     void OnPlayerTalentsReset(Player* p, bool noCost) override
     {
-        if (!sEraTalentsConfig->Enabled() || IsBot(p))
+        if (!EnabledFor(p) || EraTransition::NativeResetActive(p))
             return;
         EraId era = EraFromIP(p);
-        if (!EraHasTalentTrees(era))
-            return;                              // native-era char: core handles everything
+        if (!EraHasTalentTrees(p, era) || EraTransition::StoredEra(p) != era || p->IsInCombat())
+            return;
         if (EraTalents::SpentPoints(p, era) == 0)
-            return;                              // nothing to reset
+            return;
+
+        uint32 cost = 0;
         if (!noCost)
         {
-            uint32 cost = sWorld->getBoolConfig(CONFIG_NO_RESET_TALENT_COST) ? 0 : p->resetTalentsCost();
+            cost = sWorld->getBoolConfig(CONFIG_NO_RESET_TALENT_COST) ? 0 : p->resetTalentsCost();
             if (cost && !p->HasEnoughMoney(cost))
             {
                 p->SendBuyError(BUY_ERR_NOT_ENOUGHT_MONEY, 0, 0, 0);
                 return;
             }
-            p->ModifyMoney(-int32(cost));        // exactly what the trainer confirm dialog displayed
+        }
+        // Remove any leaked native spec before charging. The outer reset then sees zero
+        // native talent points and cannot charge a second time or award duplicate criteria.
+        EraTransition::StripNativeTalents(p, era);
+        if (!noCost)
+        {
+            p->ModifyMoney(-int32(cost));
+            p->RecordTalentReset(cost);
         }
         EraTalents::Reset(p, era);
-        p->CastSpell(p, 14867, true);            // "Untalent Visual Effect" — the core's own cast never fires
-        EraTalentsComms::SendSync(p);            // addon panel refreshes live
+        EraTalentsComms::SendSync(p);
+        p->CompleteCustomTalentReset();  // ordinary trainer handler sends the one normal visual
     }
 
 private:
     void pin(Player* p, EraId era)
     {
-        if (EraHasTalentTrees(era))
+        if (EraHasTalentTrees(p, era))
         {
             p->SetFreeTalentPoints(0);
             p->SendTalentsInfoData(false);
@@ -358,7 +351,7 @@ public:
         if (proto->Class != ITEM_CLASS_WEAPON ||
             (proto->SubClass != ITEM_SUBCLASS_WEAPON_AXE2 && proto->SubClass != ITEM_SUBCLASS_WEAPON_MACE2))
             return true;                              // not a 2H axe (subclass 1) / 2H mace (subclass 5) -> allow
-        if (EraTalentBots::EraFor(p) != ERA_VANILLA)
+        if (EraTransition::StoredEra(p) != ERA_VANILLA)
             return true;                              // TBC/WotLK shaman -> 2H is baseline, allow
 
         // Vanilla shaman + a 2H axe/mace: allow ONLY with the Two-Handed Axes and Maces talent
