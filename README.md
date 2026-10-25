@@ -9,6 +9,7 @@ The server module and its client addon are built together by [mod-playerbots-por
 Changes on `main`:
 
 - Selects historical trees, training, glyph rules and point budgets from each character's own earned Individual Progression tier.
+- Keeps TBC and WotLK class trainer lessons from characters who have not earned that expansion, as their trainers, quests and books first taught them.
 - Merges German names, descriptions and aura text into the historical spell rows and translates the addon.
 - Keeps historical spells in their native spell groups and trains priest racial spells through their class quests.
 - Shows inspected bots' historical trees and lets owners train their controlled altbots.

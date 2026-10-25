@@ -15,6 +15,7 @@
 #include "DBCStores.h"
 #include "EraBandClassifier.h"
 #include "EraEarnedTrainingData.gen.h"
+#include "EraTrainerEraData.gen.h"
 #include "EraTalentBots.h"
 #include "EraTalents.h"
 #include "EraTalentsConfig.h"
@@ -99,6 +100,19 @@ bool StockTalentGate(Player* player, EraId era, uint32 spellId)
     return !node || EraTalents::CurrentRank(player, era, node) > 0;
 }
 
+// The era whose trainers first taught a stock lesson of this class; Vanilla for every older one.
+uint8 IntroducedEra(uint8 classId, uint32 spellId)
+{
+    auto const* end = std::end(EraTrainerEraData::kLaterLessons);
+    auto const* lesson = std::lower_bound(std::begin(EraTrainerEraData::kLaterLessons), end, spellId,
+                                          [](EraTrainerEraData::Lesson const& entry, uint32 id)
+                                          { return entry.spellId < id; });
+    for (; lesson != end && lesson->spellId == spellId; ++lesson)
+        if (lesson->classId == classId)
+            return lesson->era;
+    return uint8(ERA_VANILLA);
+}
+
 bool FactionAllowed(Player* player, uint32 spellId)
 {
     if (spellId == 946080 || spellId == 53736)
@@ -126,7 +140,8 @@ bool VariantAllowed(Player* player, EraId era, uint32 spellId)
         if (variant.spell[uint8(era)] == spellId)
             return true;
     }
-    return !mapped;
+    // A lesson without an era variant waits for the expansion that introduced it.
+    return !mapped && IntroducedEra(player->getClass(), spellId) <= uint8(era);
 }
 }  // namespace
 
