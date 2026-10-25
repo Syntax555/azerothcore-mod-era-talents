@@ -3,6 +3,11 @@ class: 5
 eraName: Vanilla
 className: PRIEST
 ref: ../_ref/priest-spells.yaml
+clientNativeSpellRestoration:
+  source: pinned-wrath-english
+  sourceSha256: d5cce1a83550dcfa9eb2f0251dbb11fd24c272534b2b1a9b230924a44d817ab3
+  fields: [ManaCost, ManaCostPct]
+  spellIds: [19236, 19238, 19240, 19241, 19242, 19243, 2944, 19276, 19277, 19278, 19279, 19280]
 helpers:
 - id: 932970
   name: Blackout
@@ -176,6 +181,4704 @@ helpers:
                             # framework's hidden-payload gotcha — same treatment as SoC 932607). Named
                             # like stock 15290 so log lines read "Vampiric Embrace"; no skillLine, so
                             # no spellbook row.
+# Historical priest racial abilities, acquired through racial class quests and paid rank lessons.
+# Original mechanics: CMaNGOS classic core 8ec338a1704e7dcb1c0213eb7ed58f9231ade40f and
+# TBC core a8ad244bcbce8457a62a1c73aa1f5241850b75ac (GPL). Native Wrath records remain unchanged.
+- id: 948081
+  name: Desperate Prayer (Rank 1)
+  category: 671
+  dispelType: 0
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 600000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 134217728
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 16
+  baseLevel: 10
+  spellLevel: 10
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4819
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 2
+  mask: 16777216
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 10
+    dieSides: 37
+    basePoints: 133
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 2.4
+    valueMultiplier: 0
+  client:
+    name: Desperate Prayer
+    icon: 73
+    description: Instantly heals the caster for $s1.
+    skillLine: 56
+    rank: 1
+- id: 948082
+  name: Desperate Prayer (Rank 2)
+  category: 671
+  dispelType: 0
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 600000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 134217728
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 24
+  baseLevel: 18
+  spellLevel: 18
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4819
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 2
+  mask: 16777216
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 10
+    dieSides: 63
+    basePoints: 262
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 3.4
+    valueMultiplier: 0
+  client:
+    name: Desperate Prayer
+    icon: 73
+    description: Instantly heals the caster for $s1.
+    skillLine: 56
+    rank: 2
+- id: 948083
+  name: Desperate Prayer (Rank 3)
+  category: 671
+  dispelType: 0
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 600000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 134217728
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 32
+  baseLevel: 26
+  spellLevel: 26
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4819
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 2
+  mask: 16777216
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 10
+    dieSides: 97
+    basePoints: 446
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 4.5
+    valueMultiplier: 0
+  client:
+    name: Desperate Prayer
+    icon: 73
+    description: Instantly heals the caster for $s1.
+    skillLine: 56
+    rank: 3
+- id: 948084
+  name: Desperate Prayer (Rank 4)
+  category: 671
+  dispelType: 0
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 600000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 134217728
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 40
+  baseLevel: 34
+  spellLevel: 34
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4819
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 2
+  mask: 16777216
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 10
+    dieSides: 121
+    basePoints: 587
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 5.3
+    valueMultiplier: 0
+  client:
+    name: Desperate Prayer
+    icon: 73
+    description: Instantly heals the caster for $s1.
+    skillLine: 56
+    rank: 4
+- id: 948085
+  name: Desperate Prayer (Rank 5)
+  category: 671
+  dispelType: 0
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 600000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 134217728
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 48
+  baseLevel: 42
+  spellLevel: 42
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4819
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 2
+  mask: 16777216
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 10
+    dieSides: 161
+    basePoints: 833
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 6.4
+    valueMultiplier: 0
+  client:
+    name: Desperate Prayer
+    icon: 73
+    description: Instantly heals the caster for $s1.
+    skillLine: 56
+    rank: 5
+- id: 948086
+  name: Desperate Prayer (Rank 6)
+  category: 671
+  dispelType: 0
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 600000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 134217728
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 56
+  baseLevel: 50
+  spellLevel: 50
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4819
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 2
+  mask: 16777216
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 10
+    dieSides: 205
+    basePoints: 1100
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 7.4
+    valueMultiplier: 0
+  client:
+    name: Desperate Prayer
+    icon: 73
+    description: Instantly heals the caster for $s1.
+    skillLine: 56
+    rank: 6
+- id: 948087
+  name: Desperate Prayer (Rank 7)
+  category: 671
+  dispelType: 0
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 600000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 134217728
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 64
+  baseLevel: 58
+  spellLevel: 58
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4819
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 2
+  mask: 16777216
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 10
+    dieSides: 239
+    basePoints: 1323
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 8.2
+    valueMultiplier: 0
+  client:
+    name: Desperate Prayer
+    icon: 73
+    description: Instantly heals the caster for $s1.
+    skillLine: 56
+    rank: 7
+- id: 948090
+  name: Learn Desperate Prayer
+  attributes: 262400
+  school: 1
+  effects:
+  - effect: 3
+    targetA: 1
+  client:
+    name: Learn Desperate Prayer
+    icon: 73
+    description: Teaches Desperate Prayer.
+- id: 948089
+  name: Fear Ward
+  category: 0
+  dispelType: 1
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 30000
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 134217728
+  targetCreatureType: 0
+  procTypeMask: 139264
+  procChance: 100
+  procCharges: 1
+  maxLevel: 0
+  baseLevel: 20
+  spellLevel: 20
+  durationIndex: 6
+  powerType: 0
+  powerCost: 100
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 343
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 2
+  mask: 2147483648
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -1
+    mechanic: 0
+    targetA: 21
+    targetB: 0
+    radius: 0
+    aura: 77
+    amplitude: 0
+    misc: 5
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  proc:
+    flags: 139264
+    typeMask: 0
+    phaseMask: 0
+    hitMask: 256
+  client:
+    name: Fear Ward
+    icon: 158
+    description: Wards the friendly target against Fear. The next Fear effect consumes the ward. Lasts $d.
+    skillLine: 56
+    rank: 0
+    auraDescription: Protected against Fear.
+- id: 948091
+  name: Learn Fear Ward
+  attributes: 262400
+  school: 1
+  effects:
+  - effect: 3
+    targetA: 1
+  client:
+    name: Learn Fear Ward
+    icon: 158
+    description: Teaches Fear Ward.
+- id: 949100
+  name: Starshards (Rank 1)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 4
+  attributesEx2: 4718592
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 15
+  auraInterruptFlags: 0
+  channelInterruptFlags: 31756
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 16
+  baseLevel: 10
+  spellLevel: 10
+  durationIndex: 32
+  powerType: 0
+  powerCost: 50
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 4821
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 64
+  mask: 2097152
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 13
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 3
+    amplitude: 1000
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Starshards
+    icon: 1485
+    description: Rains starshards down on the enemy, causing Arcane damage over $d.
+    skillLine: 56
+    rank: 1
+    auraDescription: Rains starshards down on the enemy, causing Arcane damage over $d.
+- id: 949101
+  name: Starshards (Rank 2)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 4
+  attributesEx2: 4718592
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 15
+  auraInterruptFlags: 0
+  channelInterruptFlags: 31756
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 24
+  baseLevel: 18
+  spellLevel: 18
+  durationIndex: 32
+  powerType: 0
+  powerCost: 85
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 4821
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 64
+  mask: 2097152
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 26
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 3
+    amplitude: 1000
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Starshards
+    icon: 1485
+    description: Rains starshards down on the enemy, causing Arcane damage over $d.
+    skillLine: 56
+    rank: 2
+    auraDescription: Rains starshards down on the enemy, causing Arcane damage over $d.
+- id: 949102
+  name: Starshards (Rank 3)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 4
+  attributesEx2: 4718592
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 15
+  auraInterruptFlags: 0
+  channelInterruptFlags: 31756
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 32
+  baseLevel: 26
+  spellLevel: 26
+  durationIndex: 32
+  powerType: 0
+  powerCost: 140
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 4821
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 64
+  mask: 2097152
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 47
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 3
+    amplitude: 1000
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Starshards
+    icon: 1485
+    description: Rains starshards down on the enemy, causing Arcane damage over $d.
+    skillLine: 56
+    rank: 3
+    auraDescription: Rains starshards down on the enemy, causing Arcane damage over $d.
+- id: 949103
+  name: Starshards (Rank 4)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 4
+  attributesEx2: 4718592
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 15
+  auraInterruptFlags: 0
+  channelInterruptFlags: 31756
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 40
+  baseLevel: 34
+  spellLevel: 34
+  durationIndex: 32
+  powerType: 0
+  powerCost: 190
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 4821
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 64
+  mask: 2097152
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 68
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 3
+    amplitude: 1000
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Starshards
+    icon: 1485
+    description: Rains starshards down on the enemy, causing Arcane damage over $d.
+    skillLine: 56
+    rank: 4
+    auraDescription: Rains starshards down on the enemy, causing Arcane damage over $d.
+- id: 949104
+  name: Starshards (Rank 5)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 4
+  attributesEx2: 4718592
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 15
+  auraInterruptFlags: 0
+  channelInterruptFlags: 31756
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 48
+  baseLevel: 42
+  spellLevel: 42
+  durationIndex: 32
+  powerType: 0
+  powerCost: 245
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 4821
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 64
+  mask: 2097152
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 94
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 3
+    amplitude: 1000
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Starshards
+    icon: 1485
+    description: Rains starshards down on the enemy, causing Arcane damage over $d.
+    skillLine: 56
+    rank: 5
+    auraDescription: Rains starshards down on the enemy, causing Arcane damage over $d.
+- id: 949105
+  name: Starshards (Rank 6)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 4
+  attributesEx2: 4718592
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 15
+  auraInterruptFlags: 0
+  channelInterruptFlags: 31756
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 56
+  baseLevel: 50
+  spellLevel: 50
+  durationIndex: 32
+  powerType: 0
+  powerCost: 300
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 4821
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 64
+  mask: 2097152
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 125
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 3
+    amplitude: 1000
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Starshards
+    icon: 1485
+    description: Rains starshards down on the enemy, causing Arcane damage over $d.
+    skillLine: 56
+    rank: 6
+    auraDescription: Rains starshards down on the enemy, causing Arcane damage over $d.
+- id: 949106
+  name: Starshards (Rank 7)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 4
+  attributesEx2: 4718592
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 15
+  auraInterruptFlags: 0
+  channelInterruptFlags: 31756
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 64
+  baseLevel: 58
+  spellLevel: 58
+  durationIndex: 32
+  powerType: 0
+  powerCost: 350
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 4821
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 64
+  mask: 2097152
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 155
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 3
+    amplitude: 1000
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Starshards
+    icon: 1485
+    description: Rains starshards down on the enemy, causing Arcane damage over $d.
+    skillLine: 56
+    rank: 7
+    auraDescription: Rains starshards down on the enemy, causing Arcane damage over $d.
+- id: 949290
+  name: Learn Starshards
+  attributes: 262400
+  school: 1
+  effects:
+  - effect: 3
+    targetA: 1
+  client:
+    name: Learn Starshards
+    icon: 1485
+    description: Teaches Starshards.
+- id: 949107
+  name: Elune's Grace (Rank 1)
+  category: 1144
+  dispelType: 1
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 300000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 20
+  spellLevel: 20
+  durationIndex: 8
+  powerType: 0
+  powerCost: 60
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 7376
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 2
+  mask: 2147483648
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -22
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 113
+    amplitude: 0
+    misc: 1
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  - effect: 6
+    dieSides: 1
+    basePoints: 9
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 49
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Elune's Grace
+    icon: 1714
+    description: Reduces damage taken from ranged attacks and improves dodge chance for $d.
+    skillLine: 56
+    rank: 1
+    auraDescription: Reduces damage taken from ranged attacks and improves dodge chance for $d.
+- id: 949108
+  name: Elune's Grace (Rank 2)
+  category: 1144
+  dispelType: 1
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 300000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 30
+  spellLevel: 30
+  durationIndex: 8
+  powerType: 0
+  powerCost: 105
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 7376
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 2
+  mask: 2147483648
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -34
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 113
+    amplitude: 0
+    misc: 1
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  - effect: 6
+    dieSides: 1
+    basePoints: 9
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 49
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Elune's Grace
+    icon: 1714
+    description: Reduces damage taken from ranged attacks and improves dodge chance for $d.
+    skillLine: 56
+    rank: 2
+    auraDescription: Reduces damage taken from ranged attacks and improves dodge chance for $d.
+- id: 949109
+  name: Elune's Grace (Rank 3)
+  category: 1144
+  dispelType: 1
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 300000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 40
+  spellLevel: 40
+  durationIndex: 8
+  powerType: 0
+  powerCost: 145
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 7376
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 2
+  mask: 2147483648
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -53
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 113
+    amplitude: 0
+    misc: 1
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  - effect: 6
+    dieSides: 1
+    basePoints: 9
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 49
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Elune's Grace
+    icon: 1714
+    description: Reduces damage taken from ranged attacks and improves dodge chance for $d.
+    skillLine: 56
+    rank: 3
+    auraDescription: Reduces damage taken from ranged attacks and improves dodge chance for $d.
+- id: 949110
+  name: Elune's Grace (Rank 4)
+  category: 1144
+  dispelType: 1
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 300000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 50
+  spellLevel: 50
+  durationIndex: 8
+  powerType: 0
+  powerCost: 195
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 7376
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 2
+  mask: 2147483648
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -76
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 113
+    amplitude: 0
+    misc: 1
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  - effect: 6
+    dieSides: 1
+    basePoints: 9
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 49
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Elune's Grace
+    icon: 1714
+    description: Reduces damage taken from ranged attacks and improves dodge chance for $d.
+    skillLine: 56
+    rank: 4
+    auraDescription: Reduces damage taken from ranged attacks and improves dodge chance for $d.
+- id: 949111
+  name: Elune's Grace (Rank 5)
+  category: 1144
+  dispelType: 1
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 300000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 60
+  spellLevel: 60
+  durationIndex: 8
+  powerType: 0
+  powerCost: 240
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 7376
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 2
+  mask: 2147483648
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -96
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 113
+    amplitude: 0
+    misc: 1
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  - effect: 6
+    dieSides: 1
+    basePoints: 9
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 49
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Elune's Grace
+    icon: 1714
+    description: Reduces damage taken from ranged attacks and improves dodge chance for $d.
+    skillLine: 56
+    rank: 5
+    auraDescription: Reduces damage taken from ranged attacks and improves dodge chance for $d.
+- id: 949291
+  name: Learn Elune's Grace
+  attributes: 262400
+  school: 1
+  effects:
+  - effect: 3
+    targetA: 1
+  client:
+    name: Learn Elune's Grace
+    icon: 1714
+    description: Teaches Elune's Grace.
+- id: 949112
+  name: Touch of Weakness (Rank 1)
+  category: 0
+  dispelType: 1
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 40
+  procChance: 100
+  procCharges: 1
+  maxLevel: 0
+  baseLevel: 10
+  spellLevel: 10
+  durationIndex: 6
+  powerType: 0
+  powerCost: 25
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4820
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2214592512
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -1
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 42
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 949118
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  proc:
+    flags: 40
+    typeMask: 0
+    phaseMask: 0
+  client:
+    name: Touch of Weakness
+    icon: 1591
+    description: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+    skillLine: 56
+    rank: 1
+    auraDescription: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+- id: 949113
+  name: Touch of Weakness (Rank 2)
+  category: 0
+  dispelType: 1
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 40
+  procChance: 100
+  procCharges: 1
+  maxLevel: 0
+  baseLevel: 20
+  spellLevel: 20
+  durationIndex: 6
+  powerType: 0
+  powerCost: 45
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4820
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2214592512
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -1
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 42
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 949119
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  proc:
+    flags: 40
+    typeMask: 0
+    phaseMask: 0
+  client:
+    name: Touch of Weakness
+    icon: 1591
+    description: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+    skillLine: 56
+    rank: 2
+    auraDescription: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+- id: 949114
+  name: Touch of Weakness (Rank 3)
+  category: 0
+  dispelType: 1
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 40
+  procChance: 100
+  procCharges: 1
+  maxLevel: 0
+  baseLevel: 30
+  spellLevel: 30
+  durationIndex: 6
+  powerType: 0
+  powerCost: 75
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4820
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2214592512
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -1
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 42
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 949120
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  proc:
+    flags: 40
+    typeMask: 0
+    phaseMask: 0
+  client:
+    name: Touch of Weakness
+    icon: 1591
+    description: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+    skillLine: 56
+    rank: 3
+    auraDescription: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+- id: 949115
+  name: Touch of Weakness (Rank 4)
+  category: 0
+  dispelType: 1
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 40
+  procChance: 100
+  procCharges: 1
+  maxLevel: 0
+  baseLevel: 40
+  spellLevel: 40
+  durationIndex: 6
+  powerType: 0
+  powerCost: 105
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4820
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2214592512
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -1
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 42
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 949121
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  proc:
+    flags: 40
+    typeMask: 0
+    phaseMask: 0
+  client:
+    name: Touch of Weakness
+    icon: 1591
+    description: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+    skillLine: 56
+    rank: 4
+    auraDescription: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+- id: 949116
+  name: Touch of Weakness (Rank 5)
+  category: 0
+  dispelType: 1
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 40
+  procChance: 100
+  procCharges: 1
+  maxLevel: 0
+  baseLevel: 50
+  spellLevel: 50
+  durationIndex: 6
+  powerType: 0
+  powerCost: 145
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4820
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2214592512
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -1
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 42
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 949122
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  proc:
+    flags: 40
+    typeMask: 0
+    phaseMask: 0
+  client:
+    name: Touch of Weakness
+    icon: 1591
+    description: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+    skillLine: 56
+    rank: 5
+    auraDescription: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+- id: 949117
+  name: Touch of Weakness (Rank 6)
+  category: 0
+  dispelType: 1
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 40
+  procChance: 100
+  procCharges: 1
+  maxLevel: 0
+  baseLevel: 60
+  spellLevel: 60
+  durationIndex: 6
+  powerType: 0
+  powerCost: 195
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4820
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2214592512
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -1
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 42
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 949123
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  proc:
+    flags: 40
+    typeMask: 0
+    phaseMask: 0
+  client:
+    name: Touch of Weakness
+    icon: 1591
+    description: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+    skillLine: 56
+    rank: 6
+    auraDescription: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+- id: 949118
+  name: Touch of Weakness triggered effect (Rank 1)
+  category: 0
+  dispelType: 2
+  mechanic: 0
+  attributes: 262144
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 0
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 10
+  spellLevel: 10
+  durationIndex: 4
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 6
+  stackAmount: 0
+  spellVisual: 183
+  manaCostPct: 0
+  startRecoveryCategory: 0
+  startRecoveryTime: 0
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 524288
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 2
+    dieSides: 1
+    basePoints: 7
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  - effect: 6
+    dieSides: 1
+    basePoints: -3
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 13
+    amplitude: 0
+    misc: 1
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  client:
+    name: Touch of Weakness
+    icon: 1591
+    description: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+    auraDescription: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+- id: 949119
+  name: Touch of Weakness triggered effect (Rank 2)
+  category: 0
+  dispelType: 2
+  mechanic: 0
+  attributes: 262144
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 0
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 20
+  spellLevel: 20
+  durationIndex: 4
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 6
+  stackAmount: 0
+  spellVisual: 183
+  manaCostPct: 0
+  startRecoveryCategory: 0
+  startRecoveryTime: 0
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 524288
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 2
+    dieSides: 1
+    basePoints: 14
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  - effect: 6
+    dieSides: 1
+    basePoints: -5
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 13
+    amplitude: 0
+    misc: 1
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  client:
+    name: Touch of Weakness
+    icon: 1591
+    description: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+    auraDescription: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+- id: 949120
+  name: Touch of Weakness triggered effect (Rank 3)
+  category: 0
+  dispelType: 2
+  mechanic: 0
+  attributes: 262144
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 0
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 30
+  spellLevel: 30
+  durationIndex: 4
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 6
+  stackAmount: 0
+  spellVisual: 183
+  manaCostPct: 0
+  startRecoveryCategory: 0
+  startRecoveryTime: 0
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 524288
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 2
+    dieSides: 1
+    basePoints: 23
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  - effect: 6
+    dieSides: 1
+    basePoints: -8
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 13
+    amplitude: 0
+    misc: 1
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  client:
+    name: Touch of Weakness
+    icon: 1591
+    description: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+    auraDescription: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+- id: 949121
+  name: Touch of Weakness triggered effect (Rank 4)
+  category: 0
+  dispelType: 2
+  mechanic: 0
+  attributes: 262144
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 0
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 40
+  spellLevel: 40
+  durationIndex: 4
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 6
+  stackAmount: 0
+  spellVisual: 183
+  manaCostPct: 0
+  startRecoveryCategory: 0
+  startRecoveryTime: 0
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 524288
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 2
+    dieSides: 1
+    basePoints: 34
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  - effect: 6
+    dieSides: 1
+    basePoints: -12
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 13
+    amplitude: 0
+    misc: 1
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  client:
+    name: Touch of Weakness
+    icon: 1591
+    description: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+    auraDescription: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+- id: 949122
+  name: Touch of Weakness triggered effect (Rank 5)
+  category: 0
+  dispelType: 2
+  mechanic: 0
+  attributes: 262144
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 0
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 50
+  spellLevel: 50
+  durationIndex: 4
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 6
+  stackAmount: 0
+  spellVisual: 183
+  manaCostPct: 0
+  startRecoveryCategory: 0
+  startRecoveryTime: 0
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 524288
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 2
+    dieSides: 1
+    basePoints: 47
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  - effect: 6
+    dieSides: 1
+    basePoints: -16
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 13
+    amplitude: 0
+    misc: 1
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  client:
+    name: Touch of Weakness
+    icon: 1591
+    description: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+    auraDescription: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+- id: 949123
+  name: Touch of Weakness triggered effect (Rank 6)
+  category: 0
+  dispelType: 2
+  mechanic: 0
+  attributes: 262144
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 0
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 60
+  spellLevel: 60
+  durationIndex: 4
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 6
+  stackAmount: 0
+  spellVisual: 183
+  manaCostPct: 0
+  startRecoveryCategory: 0
+  startRecoveryTime: 0
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 524288
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 2
+    dieSides: 1
+    basePoints: 63
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  - effect: 6
+    dieSides: 1
+    basePoints: -21
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 13
+    amplitude: 0
+    misc: 1
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  client:
+    name: Touch of Weakness
+    icon: 1591
+    description: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+    auraDescription: The next melee attack against the caster causes Shadow damage and reduces the attacker's damage.
+- id: 949292
+  name: Learn Touch of Weakness
+  attributes: 262400
+  school: 1
+  effects:
+  - effect: 3
+    targetA: 1
+  client:
+    name: Learn Touch of Weakness
+    icon: 1591
+    description: Teaches Touch of Weakness.
+- id: 949124
+  name: Hex of Weakness (Rank 1)
+  category: 0
+  dispelType: 2
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 10
+  spellLevel: 10
+  durationIndex: 4
+  powerType: 0
+  powerCost: 35
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 346
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2214592512
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -3
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 13
+    amplitude: 0
+    misc: 1
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  - effect: 6
+    dieSides: 1
+    basePoints: -21
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 118
+    amplitude: 0
+    misc: 127
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Hex of Weakness
+    icon: 76
+    description: Weakens the target, reducing damage caused and healing received for $d.
+    skillLine: 56
+    rank: 1
+    auraDescription: Weakens the target, reducing damage caused and healing received for $d.
+- id: 949125
+  name: Hex of Weakness (Rank 2)
+  category: 0
+  dispelType: 2
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 20
+  spellLevel: 20
+  durationIndex: 4
+  powerType: 0
+  powerCost: 55
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 346
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2214592512
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -5
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 13
+    amplitude: 0
+    misc: 1
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  - effect: 6
+    dieSides: 1
+    basePoints: -21
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 118
+    amplitude: 0
+    misc: 127
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Hex of Weakness
+    icon: 76
+    description: Weakens the target, reducing damage caused and healing received for $d.
+    skillLine: 56
+    rank: 2
+    auraDescription: Weakens the target, reducing damage caused and healing received for $d.
+- id: 949126
+  name: Hex of Weakness (Rank 3)
+  category: 0
+  dispelType: 2
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 30
+  spellLevel: 30
+  durationIndex: 4
+  powerType: 0
+  powerCost: 90
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 346
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2214592512
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -8
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 13
+    amplitude: 0
+    misc: 1
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  - effect: 6
+    dieSides: 1
+    basePoints: -21
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 118
+    amplitude: 0
+    misc: 127
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Hex of Weakness
+    icon: 76
+    description: Weakens the target, reducing damage caused and healing received for $d.
+    skillLine: 56
+    rank: 3
+    auraDescription: Weakens the target, reducing damage caused and healing received for $d.
+- id: 949127
+  name: Hex of Weakness (Rank 4)
+  category: 0
+  dispelType: 2
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 40
+  spellLevel: 40
+  durationIndex: 4
+  powerType: 0
+  powerCost: 130
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 346
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2214592512
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -12
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 13
+    amplitude: 0
+    misc: 1
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  - effect: 6
+    dieSides: 1
+    basePoints: -21
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 118
+    amplitude: 0
+    misc: 127
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Hex of Weakness
+    icon: 76
+    description: Weakens the target, reducing damage caused and healing received for $d.
+    skillLine: 56
+    rank: 4
+    auraDescription: Weakens the target, reducing damage caused and healing received for $d.
+- id: 949128
+  name: Hex of Weakness (Rank 5)
+  category: 0
+  dispelType: 2
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 50
+  spellLevel: 50
+  durationIndex: 4
+  powerType: 0
+  powerCost: 180
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 346
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2214592512
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -16
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 13
+    amplitude: 0
+    misc: 1
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  - effect: 6
+    dieSides: 1
+    basePoints: -21
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 118
+    amplitude: 0
+    misc: 127
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Hex of Weakness
+    icon: 76
+    description: Weakens the target, reducing damage caused and healing received for $d.
+    skillLine: 56
+    rank: 5
+    auraDescription: Weakens the target, reducing damage caused and healing received for $d.
+- id: 949129
+  name: Hex of Weakness (Rank 6)
+  category: 0
+  dispelType: 2
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 60
+  spellLevel: 60
+  durationIndex: 4
+  powerType: 0
+  powerCost: 240
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 346
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2214592512
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -21
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 13
+    amplitude: 0
+    misc: 1
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  - effect: 6
+    dieSides: 1
+    basePoints: -21
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 118
+    amplitude: 0
+    misc: 127
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  client:
+    name: Hex of Weakness
+    icon: 76
+    description: Weakens the target, reducing damage caused and healing received for $d.
+    skillLine: 56
+    rank: 6
+    auraDescription: Weakens the target, reducing damage caused and healing received for $d.
+- id: 949293
+  name: Learn Hex of Weakness
+  attributes: 262400
+  school: 1
+  effects:
+  - effect: 3
+    targetA: 1
+  client:
+    name: Learn Hex of Weakness
+    icon: 76
+    description: Teaches Hex of Weakness.
+- id: 949130
+  name: Shadowguard (Rank 1)
+  category: 0
+  dispelType: 1
+  mechanic: 0
+  attributes: 327680
+  attributesEx: 1024
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 139944
+  procChance: 100
+  procCharges: 3
+  maxLevel: 0
+  baseLevel: 20
+  spellLevel: 20
+  durationIndex: 6
+  powerType: 0
+  powerCost: 50
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 37
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2147483648
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 19
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 42
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 949136
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  proc:
+    flags: 139944
+    typeMask: 0
+    phaseMask: 0
+    cooldown: 3000
+  client:
+    name: Shadowguard
+    icon: 19
+    description: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+    skillLine: 56
+    rank: 1
+    auraDescription: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+- id: 949131
+  name: Shadowguard (Rank 2)
+  category: 0
+  dispelType: 1
+  mechanic: 0
+  attributes: 327680
+  attributesEx: 1024
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 139944
+  procChance: 100
+  procCharges: 3
+  maxLevel: 0
+  baseLevel: 28
+  spellLevel: 28
+  durationIndex: 6
+  powerType: 0
+  powerCost: 85
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 37
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2147483648
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 34
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 42
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 949137
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  proc:
+    flags: 139944
+    typeMask: 0
+    phaseMask: 0
+    cooldown: 3000
+  client:
+    name: Shadowguard
+    icon: 19
+    description: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+    skillLine: 56
+    rank: 2
+    auraDescription: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+- id: 949132
+  name: Shadowguard (Rank 3)
+  category: 0
+  dispelType: 1
+  mechanic: 0
+  attributes: 327680
+  attributesEx: 1024
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 139944
+  procChance: 100
+  procCharges: 3
+  maxLevel: 0
+  baseLevel: 36
+  spellLevel: 36
+  durationIndex: 6
+  powerType: 0
+  powerCost: 120
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 37
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2147483648
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 50
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 42
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 949138
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  proc:
+    flags: 139944
+    typeMask: 0
+    phaseMask: 0
+    cooldown: 3000
+  client:
+    name: Shadowguard
+    icon: 19
+    description: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+    skillLine: 56
+    rank: 3
+    auraDescription: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+- id: 949133
+  name: Shadowguard (Rank 4)
+  category: 0
+  dispelType: 1
+  mechanic: 0
+  attributes: 327680
+  attributesEx: 1024
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 139944
+  procChance: 100
+  procCharges: 3
+  maxLevel: 0
+  baseLevel: 44
+  spellLevel: 44
+  durationIndex: 6
+  powerType: 0
+  powerCost: 160
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 37
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2147483648
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 69
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 42
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 949139
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  proc:
+    flags: 139944
+    typeMask: 0
+    phaseMask: 0
+    cooldown: 3000
+  client:
+    name: Shadowguard
+    icon: 19
+    description: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+    skillLine: 56
+    rank: 4
+    auraDescription: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+- id: 949134
+  name: Shadowguard (Rank 5)
+  category: 0
+  dispelType: 1
+  mechanic: 0
+  attributes: 327680
+  attributesEx: 1024
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 139944
+  procChance: 100
+  procCharges: 3
+  maxLevel: 0
+  baseLevel: 52
+  spellLevel: 52
+  durationIndex: 6
+  powerType: 0
+  powerCost: 200
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 37
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2147483648
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 89
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 42
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 949140
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  proc:
+    flags: 139944
+    typeMask: 0
+    phaseMask: 0
+    cooldown: 3000
+  client:
+    name: Shadowguard
+    icon: 19
+    description: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+    skillLine: 56
+    rank: 5
+    auraDescription: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+- id: 949135
+  name: Shadowguard (Rank 6)
+  category: 0
+  dispelType: 1
+  mechanic: 0
+  attributes: 327680
+  attributesEx: 1024
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 139944
+  procChance: 100
+  procCharges: 3
+  maxLevel: 0
+  baseLevel: 60
+  spellLevel: 60
+  durationIndex: 6
+  powerType: 0
+  powerCost: 250
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 37
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2147483648
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 115
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 42
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 949141
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  proc:
+    flags: 139944
+    typeMask: 0
+    phaseMask: 0
+    cooldown: 3000
+  client:
+    name: Shadowguard
+    icon: 19
+    description: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+    skillLine: 56
+    rank: 6
+    auraDescription: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+- id: 949136
+  name: Shadowguard triggered effect (Rank 1)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 16777216
+  attributesEx: 0
+  attributesEx2: 536870912
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 0
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 20
+  spellLevel: 20
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 6
+  stackAmount: 0
+  spellVisual: 0
+  manaCostPct: 0
+  startRecoveryCategory: 0
+  startRecoveryTime: 0
+  family: 6
+  defenseType: 1
+  preventionType: 0
+  attributesEx7: 0
+  school: 32
+  mask: 33554432
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 2
+    dieSides: 1
+    basePoints: 19
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  client:
+    name: Shadowguard
+    icon: 19
+    description: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+- id: 949137
+  name: Shadowguard triggered effect (Rank 2)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 16777216
+  attributesEx: 0
+  attributesEx2: 536870912
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 0
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 28
+  spellLevel: 28
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 6
+  stackAmount: 0
+  spellVisual: 0
+  manaCostPct: 0
+  startRecoveryCategory: 0
+  startRecoveryTime: 0
+  family: 6
+  defenseType: 1
+  preventionType: 0
+  attributesEx7: 0
+  school: 32
+  mask: 33554432
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 2
+    dieSides: 1
+    basePoints: 34
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  client:
+    name: Shadowguard
+    icon: 19
+    description: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+- id: 949138
+  name: Shadowguard triggered effect (Rank 3)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 16777216
+  attributesEx: 0
+  attributesEx2: 536870912
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 0
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 36
+  spellLevel: 36
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 6
+  stackAmount: 0
+  spellVisual: 0
+  manaCostPct: 0
+  startRecoveryCategory: 0
+  startRecoveryTime: 0
+  family: 6
+  defenseType: 1
+  preventionType: 0
+  attributesEx7: 0
+  school: 32
+  mask: 33554432
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 2
+    dieSides: 1
+    basePoints: 50
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  client:
+    name: Shadowguard
+    icon: 19
+    description: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+- id: 949139
+  name: Shadowguard triggered effect (Rank 4)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 16777216
+  attributesEx: 0
+  attributesEx2: 536870912
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 0
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 44
+  spellLevel: 44
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 6
+  stackAmount: 0
+  spellVisual: 0
+  manaCostPct: 0
+  startRecoveryCategory: 0
+  startRecoveryTime: 0
+  family: 6
+  defenseType: 1
+  preventionType: 0
+  attributesEx7: 0
+  school: 32
+  mask: 33554432
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 2
+    dieSides: 1
+    basePoints: 69
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  client:
+    name: Shadowguard
+    icon: 19
+    description: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+- id: 949140
+  name: Shadowguard triggered effect (Rank 5)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 16777216
+  attributesEx: 0
+  attributesEx2: 536870912
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 0
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 52
+  spellLevel: 52
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 6
+  stackAmount: 0
+  spellVisual: 0
+  manaCostPct: 0
+  startRecoveryCategory: 0
+  startRecoveryTime: 0
+  family: 6
+  defenseType: 1
+  preventionType: 0
+  attributesEx7: 0
+  school: 32
+  mask: 33554432
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 2
+    dieSides: 1
+    basePoints: 89
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  client:
+    name: Shadowguard
+    icon: 19
+    description: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+- id: 949141
+  name: Shadowguard triggered effect (Rank 6)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 16777216
+  attributesEx: 0
+  attributesEx2: 536870912
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 0
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 60
+  spellLevel: 60
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 6
+  stackAmount: 0
+  spellVisual: 0
+  manaCostPct: 0
+  startRecoveryCategory: 0
+  startRecoveryTime: 0
+  family: 6
+  defenseType: 1
+  preventionType: 0
+  attributesEx7: 0
+  school: 32
+  mask: 33554432
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 2
+    dieSides: 1
+    basePoints: 115
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 0
+  client:
+    name: Shadowguard
+    icon: 19
+    description: Damaging attacks against the caster trigger Shadow damage. 3 charges. Lasts $d.
+- id: 949294
+  name: Learn Shadowguard
+  attributes: 262400
+  school: 1
+  effects:
+  - effect: 3
+    targetA: 1
+  client:
+    name: Learn Shadowguard
+    icon: 19
+    description: Teaches Shadowguard.
+- id: 949142
+  name: Feedback (Rank 1)
+  category: 1144
+  dispelType: 1
+  mechanic: 0
+  attributes: 327680
+  attributesEx: 131072
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 180000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 131072
+  procChance: 100
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 20
+  spellLevel: 20
+  durationIndex: 8
+  powerType: 0
+  powerCost: 140
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4820
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2147483648
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -1
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 42
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 949147
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  proc:
+    flags: 131072
+    typeMask: 0
+    phaseMask: 0
+  client:
+    name: Feedback
+    icon: 130
+    description: Burns mana and causes Shadow damage when a spell strikes the priest. Lasts $d.
+    skillLine: 56
+    rank: 1
+    auraDescription: Burns mana and causes Shadow damage when a spell strikes the priest. Lasts $d.
+- id: 949143
+  name: Feedback (Rank 2)
+  category: 1144
+  dispelType: 1
+  mechanic: 0
+  attributes: 327680
+  attributesEx: 131072
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 180000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 131072
+  procChance: 100
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 30
+  spellLevel: 30
+  durationIndex: 8
+  powerType: 0
+  powerCost: 245
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4820
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2147483648
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -1
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 42
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 949148
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  proc:
+    flags: 131072
+    typeMask: 0
+    phaseMask: 0
+  client:
+    name: Feedback
+    icon: 130
+    description: Burns mana and causes Shadow damage when a spell strikes the priest. Lasts $d.
+    skillLine: 56
+    rank: 2
+    auraDescription: Burns mana and causes Shadow damage when a spell strikes the priest. Lasts $d.
+- id: 949144
+  name: Feedback (Rank 3)
+  category: 1144
+  dispelType: 1
+  mechanic: 0
+  attributes: 327680
+  attributesEx: 131072
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 180000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 131072
+  procChance: 100
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 40
+  spellLevel: 40
+  durationIndex: 8
+  powerType: 0
+  powerCost: 355
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4820
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2147483648
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -1
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 42
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 949149
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  proc:
+    flags: 131072
+    typeMask: 0
+    phaseMask: 0
+  client:
+    name: Feedback
+    icon: 130
+    description: Burns mana and causes Shadow damage when a spell strikes the priest. Lasts $d.
+    skillLine: 56
+    rank: 3
+    auraDescription: Burns mana and causes Shadow damage when a spell strikes the priest. Lasts $d.
+- id: 949145
+  name: Feedback (Rank 4)
+  category: 1144
+  dispelType: 1
+  mechanic: 0
+  attributes: 327680
+  attributesEx: 131072
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 180000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 131072
+  procChance: 100
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 50
+  spellLevel: 50
+  durationIndex: 8
+  powerType: 0
+  powerCost: 470
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4820
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2147483648
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -1
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 42
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 949150
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  proc:
+    flags: 131072
+    typeMask: 0
+    phaseMask: 0
+  client:
+    name: Feedback
+    icon: 130
+    description: Burns mana and causes Shadow damage when a spell strikes the priest. Lasts $d.
+    skillLine: 56
+    rank: 4
+    auraDescription: Burns mana and causes Shadow damage when a spell strikes the priest. Lasts $d.
+- id: 949146
+  name: Feedback (Rank 5)
+  category: 1144
+  dispelType: 1
+  mechanic: 0
+  attributes: 327680
+  attributesEx: 131072
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 180000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 131072
+  procChance: 100
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 60
+  spellLevel: 60
+  durationIndex: 8
+  powerType: 0
+  powerCost: 580
+  rangeIndex: 1
+  stackAmount: 0
+  spellVisual: 4820
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 2147483648
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: -1
+    mechanic: 0
+    targetA: 1
+    targetB: 0
+    radius: 0
+    aura: 42
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 949151
+    perLevel: 0
+    valueMultiplier: 0
+  stances: 134217728
+  proc:
+    flags: 131072
+    typeMask: 0
+    phaseMask: 0
+  client:
+    name: Feedback
+    icon: 130
+    description: Burns mana and causes Shadow damage when a spell strikes the priest. Lasts $d.
+    skillLine: 56
+    rank: 5
+    auraDescription: Burns mana and causes Shadow damage when a spell strikes the priest. Lasts $d.
+- id: 949147
+  name: Feedback triggered effect (Rank 1)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 262144
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 0
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 20
+  spellLevel: 20
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 6
+  stackAmount: 0
+  spellVisual: 3076
+  manaCostPct: 0
+  startRecoveryCategory: 0
+  startRecoveryTime: 0
+  family: 0
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 0
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 62
+    dieSides: 1
+    basePoints: 17
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 1
+  client:
+    name: Feedback
+    icon: 130
+    description: Burns mana and causes Shadow damage when a spell strikes the priest. Lasts $d.
+- id: 949148
+  name: Feedback triggered effect (Rank 2)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 262144
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 0
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 30
+  spellLevel: 30
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 6
+  stackAmount: 0
+  spellVisual: 3076
+  manaCostPct: 0
+  startRecoveryCategory: 0
+  startRecoveryTime: 0
+  family: 0
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 0
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 62
+    dieSides: 1
+    basePoints: 34
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 1
+  client:
+    name: Feedback
+    icon: 130
+    description: Burns mana and causes Shadow damage when a spell strikes the priest. Lasts $d.
+- id: 949149
+  name: Feedback triggered effect (Rank 3)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 262144
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 0
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 40
+  spellLevel: 40
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 6
+  stackAmount: 0
+  spellVisual: 3076
+  manaCostPct: 0
+  startRecoveryCategory: 0
+  startRecoveryTime: 0
+  family: 0
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 0
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 62
+    dieSides: 1
+    basePoints: 53
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 1
+  client:
+    name: Feedback
+    icon: 130
+    description: Burns mana and causes Shadow damage when a spell strikes the priest. Lasts $d.
+- id: 949150
+  name: Feedback triggered effect (Rank 4)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 262144
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 0
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 50
+  spellLevel: 50
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 6
+  stackAmount: 0
+  spellVisual: 3076
+  manaCostPct: 0
+  startRecoveryCategory: 0
+  startRecoveryTime: 0
+  family: 0
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 0
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 62
+    dieSides: 1
+    basePoints: 76
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 1
+  client:
+    name: Feedback
+    icon: 130
+    description: Burns mana and causes Shadow damage when a spell strikes the priest. Lasts $d.
+- id: 949151
+  name: Feedback triggered effect (Rank 5)
+  category: 0
+  dispelType: 0
+  mechanic: 0
+  attributes: 262144
+  attributesEx: 0
+  attributesEx2: 0
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 0
+  interruptFlags: 0
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 60
+  spellLevel: 60
+  durationIndex: 0
+  powerType: 0
+  powerCost: 0
+  rangeIndex: 6
+  stackAmount: 0
+  spellVisual: 3076
+  manaCostPct: 0
+  startRecoveryCategory: 0
+  startRecoveryTime: 0
+  family: 0
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 0
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 62
+    dieSides: 1
+    basePoints: 104
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 0
+    amplitude: 0
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 1
+  client:
+    name: Feedback
+    icon: 130
+    description: Burns mana and causes Shadow damage when a spell strikes the priest. Lasts $d.
+- id: 949295
+  name: Learn Feedback
+  attributes: 262400
+  school: 1
+  effects:
+  - effect: 3
+    targetA: 1
+  client:
+    name: Learn Feedback
+    icon: 130
+    description: Teaches Feedback.
+- id: 949152
+  name: Devouring Plague (Rank 1)
+  category: 691
+  dispelType: 3
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 180000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 20
+  spellLevel: 20
+  durationIndex: 106
+  powerType: 0
+  powerCost: 215
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 346
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 33554432
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 18
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 53
+    amplitude: 3000
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 1
+  stances: 134217728
+  client:
+    name: Devouring Plague
+    icon: 9
+    description: Afflicts the target with a disease that causes Shadow damage and heals the caster for $d.
+    skillLine: 56
+    rank: 1
+    auraDescription: Afflicts the target with a disease that causes Shadow damage and heals the caster for $d.
+- id: 949153
+  name: Devouring Plague (Rank 2)
+  category: 691
+  dispelType: 3
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 180000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 28
+  spellLevel: 28
+  durationIndex: 106
+  powerType: 0
+  powerCost: 350
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 346
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 33554432
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 33
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 53
+    amplitude: 3000
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 1
+  stances: 134217728
+  client:
+    name: Devouring Plague
+    icon: 9
+    description: Afflicts the target with a disease that causes Shadow damage and heals the caster for $d.
+    skillLine: 56
+    rank: 2
+    auraDescription: Afflicts the target with a disease that causes Shadow damage and heals the caster for $d.
+- id: 949154
+  name: Devouring Plague (Rank 3)
+  category: 691
+  dispelType: 3
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 180000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 36
+  spellLevel: 36
+  durationIndex: 106
+  powerType: 0
+  powerCost: 495
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 346
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 33554432
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 49
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 53
+    amplitude: 3000
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 1
+  stances: 134217728
+  client:
+    name: Devouring Plague
+    icon: 9
+    description: Afflicts the target with a disease that causes Shadow damage and heals the caster for $d.
+    skillLine: 56
+    rank: 3
+    auraDescription: Afflicts the target with a disease that causes Shadow damage and heals the caster for $d.
+- id: 949155
+  name: Devouring Plague (Rank 4)
+  category: 691
+  dispelType: 3
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 180000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 44
+  spellLevel: 44
+  durationIndex: 106
+  powerType: 0
+  powerCost: 645
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 346
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 33554432
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 67
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 53
+    amplitude: 3000
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 1
+  stances: 134217728
+  client:
+    name: Devouring Plague
+    icon: 9
+    description: Afflicts the target with a disease that causes Shadow damage and heals the caster for $d.
+    skillLine: 56
+    rank: 4
+    auraDescription: Afflicts the target with a disease that causes Shadow damage and heals the caster for $d.
+- id: 949156
+  name: Devouring Plague (Rank 5)
+  category: 691
+  dispelType: 3
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 180000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 52
+  spellLevel: 52
+  durationIndex: 106
+  powerType: 0
+  powerCost: 810
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 346
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 33554432
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 88
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 53
+    amplitude: 3000
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 1
+  stances: 134217728
+  client:
+    name: Devouring Plague
+    icon: 9
+    description: Afflicts the target with a disease that causes Shadow damage and heals the caster for $d.
+    skillLine: 56
+    rank: 5
+    auraDescription: Afflicts the target with a disease that causes Shadow damage and heals the caster for $d.
+- id: 949157
+  name: Devouring Plague (Rank 6)
+  category: 691
+  dispelType: 3
+  mechanic: 0
+  attributes: 65536
+  attributesEx: 0
+  attributesEx2: 524288
+  attributesEx3: 0
+  attributesEx4: 0
+  attributesEx5: 0
+  attributesEx6: 0
+  castTimeIndex: 1
+  cooldown: 0
+  categoryCooldown: 180000
+  interruptFlags: 8
+  auraInterruptFlags: 0
+  channelInterruptFlags: 0
+  shapeshiftExclude: 0
+  targetCreatureType: 0
+  procTypeMask: 0
+  procChance: 101
+  procCharges: 0
+  maxLevel: 0
+  baseLevel: 60
+  spellLevel: 60
+  durationIndex: 106
+  powerType: 0
+  powerCost: 985
+  rangeIndex: 4
+  stackAmount: 0
+  spellVisual: 346
+  manaCostPct: 0
+  startRecoveryCategory: 133
+  startRecoveryTime: 1500
+  family: 6
+  defenseType: 1
+  preventionType: 1
+  attributesEx7: 0
+  school: 32
+  mask: 33554432
+  maskB: 0
+  maskC: 0
+  effects:
+  - effect: 6
+    dieSides: 1
+    basePoints: 112
+    mechanic: 0
+    targetA: 6
+    targetB: 0
+    radius: 0
+    aura: 53
+    amplitude: 3000
+    misc: 0
+    miscB: 0
+    trigger: 0
+    perLevel: 0
+    valueMultiplier: 1
+  stances: 134217728
+  client:
+    name: Devouring Plague
+    icon: 9
+    description: Afflicts the target with a disease that causes Shadow damage and heals the caster for $d.
+    skillLine: 56
+    rank: 6
+    auraDescription: Afflicts the target with a disease that causes Shadow damage and heals the caster for $d.
+- id: 949296
+  name: Learn Devouring Plague
+  attributes: 262400
+  school: 1
+  effects:
+  - effect: 3
+    targetA: 1
+  client:
+    name: Learn Devouring Plague
+    icon: 9
+    description: Teaches Devouring Plague.
 scriptBindings:
 - spell: 932950
   script: era_vampiric_embrace

@@ -468,4 +468,104 @@ entries:
     classes: [warrior]
     kind: level-grant
     note: Battle Stance era correction (no threat modifier / no armor penetration), reconcile-granted to every era warrior
+  - ids: [948081, 948082, 948083, 948084, 948085, 948086, 948087]
+    eras: [vanilla]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [948089]
+    eras: [vanilla]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949100, 949101, 949102, 949103, 949104, 949105, 949106]
+    eras: [vanilla]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949107, 949108, 949109, 949110, 949111]
+    eras: [vanilla]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949112, 949113, 949114, 949115, 949116, 949117]
+    eras: [vanilla]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949124, 949125, 949126, 949127, 949128, 949129]
+    eras: [vanilla]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949130, 949131, 949132, 949133, 949134, 949135]
+    eras: [vanilla]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949142, 949143, 949144, 949145, 949146]
+    eras: [vanilla]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949152, 949153, 949154, 949155, 949156, 949157]
+    eras: [vanilla]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949300, 949301, 949302, 949303, 949304, 949305, 949306, 949307]
+    eras: [tbc]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949308, 949309, 949310, 949311, 949312, 949313, 949314, 949315]
+    eras: [tbc]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949316]
+    eras: [tbc]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949317, 949318, 949319, 949320, 949321, 949322, 949323]
+    eras: [tbc]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949331, 949332, 949333, 949334, 949335, 949336, 949337]
+    eras: [tbc]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949338, 949339, 949340, 949341, 949342, 949343, 949344]
+    eras: [tbc]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949352, 949353, 949354, 949355, 949356, 949357]
+    eras: [tbc]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949364, 949365, 949366, 949367, 949368, 949369, 949370]
+    eras: [tbc]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949371, 949372, 949373, 949374, 949375, 949376]
+    eras: [tbc]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949377]
+    eras: [tbc]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
+  - ids: [949378]
+    eras: [tbc]
+    classes: [priest]
+    kind: trainer
+    note: Historical racial abilities; native racial quest credit and paid ranks required
 stranded: [920040, 920041, 920042, 920043, 920044]

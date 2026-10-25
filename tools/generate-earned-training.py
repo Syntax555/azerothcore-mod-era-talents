@@ -38,6 +38,11 @@ REMOVED = {"Seal of the Crusader", "Seal of Blood", "Grace of Air Totem",
            "Windwall Totem", "Tranquil Air Totem", "Siphon Life", "Rampage"}
 # These helpers deliberately use unrelated stock spell templates for mechanics.
 EXPLICIT = {
+    # Historical Prayer cannot alias the native Wrath talent.
+    **{spell: 0 for spell in (948081, 948082, 948083, 948084, 948085, 948086, 948087, 949300, 949301, 949302, 949303, 949304, 949305, 949306, 949307, 948089, 949100, 949101, 949102, 949103, 949104, 949105, 949106, 949308, 949309, 949310, 949311, 949312, 949313, 949314, 949315, 949107, 949108, 949109, 949110, 949111, 949316, 949112, 949113, 949114, 949115, 949116, 949117, 949317, 949318, 949319, 949320, 949321, 949322, 949323, 949124, 949125, 949126, 949127, 949128, 949129, 949331, 949332, 949333, 949334, 949335, 949336, 949337, 949130, 949131, 949132, 949133, 949134, 949135, 949338, 949339, 949340, 949341, 949342, 949343, 949344, 949142, 949143, 949144, 949145, 949146, 949352, 949353, 949354, 949355, 949356, 949357, 949152, 949153, 949154, 949155, 949156, 949157, 949364, 949365, 949366, 949367, 949368, 949369, 949370, 949371, 949372, 949373, 949374, 949375, 949376, 949377, 949378)},
+    # Preserve each actually acquired racial rank when it becomes baseline.
+    948089: 6346,
+    **{949152: 2944, 949153: 19276, 949154: 19277, 949155: 19278, 949156: 19279, 949157: 19280, 949364: 2944, 949365: 19276, 949366: 19277, 949367: 19278, 949368: 19279, 949369: 19280, 949370: 25467},
     932986: 17347, 932987: 17348, 932785: 18937, 932786: 18938,
     932668: 633, 932669: 2800, 932670: 10310,
     # Vanilla Holy Shield starts at L30, TBC/WotLK at L40: match real levels.
@@ -71,7 +76,7 @@ def statements(source: str, table: str):
     for statement in source.split(";"):
         statement = statement.strip()
         if re.match(pattern, statement, re.I):
-            yield statement
+            yield re.sub(r"^INSERT IGNORE INTO", "INSERT OR IGNORE INTO", statement, flags=re.I)
 
 
 def dump_rows(source: str, arity: int):
@@ -166,7 +171,7 @@ def stock_spell(helper, ranks, stock_ranks):
 
 def variant_data(helpers, node_levels, stock_rows, stock_ranks, rows, ranks):
     trained = {r[1] for r in rows.values() if r[1] >= 920000}
-    trained.update((932513, 932746, 932668, 932669, 932670))
+    trained.update((932513, 932746, 932668, 932669, 932670, 948081, 949300, 948089, 949100, 949308, 949107, 949316, 949112, 949317, 949124, 949331, 949130, 949338, 949142, 949352, 949152, 949364))
     selected = [h for h in helpers.values() if h.spell in trained]
     # TBC explicitly reuses some Vanilla talent-rooted chains (Sanctuary).
     # Their trained helpers occur only in the Vanilla YAML, not in TBC's file.

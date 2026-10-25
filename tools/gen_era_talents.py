@@ -1452,6 +1452,11 @@ _HELPER_SCALARS = [
     # helpers default it to 0 like every unlisted scalar, which is what the un-keyed emission
     # already produced — byte-neutral for shipped data).
     ("auraInterruptFlags", "AuraInterruptFlags"),
+    ("interruptFlags", "InterruptFlags"),
+    ("channelInterruptFlags", "ChannelInterruptFlags"),
+    ("shapeshiftExclude", "ShapeshiftExclude"),
+    ("powerType", "PowerType"),
+    ("attributesEx6", "AttributesEx6"),
 ]
 
 # Helper keys that are LINT/AUDIT ONLY — read by tools/era_audit.py, never emitted as a spell_dbc
@@ -1552,6 +1557,10 @@ def helper_overrides(h, templated: bool = False) -> dict:
             # Command chain (halved wago-2.5.4 RealPointsPerLevel, per the normal-hit halving rule).
             if e.get("perLevel") is not None:
                 over[f"EffectRealPointsPerLevel_{i}"] = float(e["perLevel"])
+            # Original power-burn and periodic-leech spells multiply drained power/
+            # dealt damage by this value. A zero-filled helper must author it.
+            if e.get("valueMultiplier") is not None:
+                over[f"EffectMultipleValue_{i}"] = float(e["valueMultiplier"])
             # Per-effect spell-class mask (which spells THIS effect's spellmod affects) — written
             # ONLY when the key is present, so a templated helper keeps INHERITING the cloned
             # record's per-effect masks for any effect that omits them (no 0-fill). Lets a single
@@ -1765,7 +1774,8 @@ SENTINEL_SPELL_ID = 932999   # reserved top-of-band id for the generation-canary
 # Files whose bytes shape every emitted artifact: a change to ANY of them is a new
 # generation even with untouched YAMLs (Tasks 1-2 changed emitted SQL yaml-free).
 _STAMP_TOOL_FILES = ("gen_era_talents.py", "build_client_dbc.py", "era_locales.py",
-                     "spell_dbc_columns.txt", "spell_dbc_coltypes.txt")
+                     "spell_dbc_columns.txt", "spell_dbc_coltypes.txt",
+                     "generate-earned-training.py", "gen_band_allowlist.py")
 
 
 def generation_stamp(dataset_paths) -> str:
@@ -1787,6 +1797,9 @@ def generation_stamp(dataset_paths) -> str:
     h = hashlib.sha1()
     for name in _STAMP_TOOL_FILES:
         h.update((pathlib.Path(__file__).parent / name).read_bytes())
+    band = pathlib.Path(__file__).resolve().parent.parent / "era-data" / "band-allowlist.yaml"
+    h.update(b"band-allowlist.yaml\n")
+    h.update(band.read_bytes())
     import era_locales as locales
     for path in locales.catalog_files():
         h.update(f"locales/deDE/{path.name}\n".encode())
