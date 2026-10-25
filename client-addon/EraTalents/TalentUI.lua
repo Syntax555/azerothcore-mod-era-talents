@@ -113,6 +113,24 @@ local function TreeFor(era, classId)
   return byClass and byClass[classId]
 end
 
+function ET.TalentData(state, classId)
+  if not state or state.partial then return nil, L["Loading talent data..."] end
+  if not ET.state.serverGen then return nil, L["Waiting for server talent data..."] end
+  if ET.state.clientGen ~= ET.state.serverGen then
+    return nil, L["Install the matching EraTalents client patch and restart the game."]
+  end
+  local tree = TreeFor(state.era, classId)
+  local byId = {}
+  if tree then
+    for _, node in ipairs(tree.talents) do byId[node.id] = node end
+    for id, rank in pairs(state.ranks or {}) do
+      if not byId[id] or rank < 0 or rank > byId[id].maxRank then tree = nil; break end
+    end
+  end
+  if not tree then return nil, L["Install the matching EraTalents addon and reload the interface."] end
+  return tree, nil, byId
+end
+
 -- Bind IsReachable to a view's live state. v.spentActive / v.byId are recomputed per ShowViewTab
 -- (both depend only on the active tab, which is all that's ever drawn).
 local function NodeAvailable(v, node)
@@ -327,9 +345,8 @@ end
 -- ---------------------------------------------------------------------------
 -- Talent buttons.
 -- ---------------------------------------------------------------------------
-local function NodeTooltip(btn)
-  local v, node = btn.view, btn.node
-  local rank = v.state.ranks[node.id] or 0
+function ET.ShowTalentTooltip(btn, node, state, readOnly)
+  local rank = state.ranks[node.id] or 0
   GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
 
   -- A spell-granting talent shows the granted spell's REAL client tooltip via a spell hyperlink:
@@ -360,12 +377,16 @@ local function NodeTooltip(btn)
   local shown = (rank > 0) and rank or 1
   GameTooltip:AddLine(ET.LocalizedField(node, "tooltip", shown) or "", 1, 0.82, 0, true)
   -- Read-only (inspect) views show the current rank only: no "Next rank", nothing to learn.
-  if not v.readOnly and rank < node.maxRank then
+  if not readOnly and rank < node.maxRank then
     GameTooltip:AddLine(" ")
     GameTooltip:AddLine(L["Next rank:"], 0.6, 0.6, 0.6)
     GameTooltip:AddLine(ET.LocalizedField(node, "tooltip", rank + 1) or "", 0.3, 1, 0.3, true)
   end
   GameTooltip:Show()
+end
+
+local function NodeTooltip(btn)
+  ET.ShowTalentTooltip(btn, btn.node, btn.view.state, btn.view.readOnly)
 end
 
 -- Every displayed node is clickable; the server is the sole authority on whether a talent is
@@ -637,6 +658,7 @@ end
 
 -- Called by Comms on every SYNC.
 function ET.Refresh()
+  if ET.RefreshDragonTalents then ET.RefreshDragonTalents() end
   if not ET.frame then return end
   if ET.frame.petTalents then
     if ET._classId == 3 then ET.frame.petTalents:Show() else ET.frame.petTalents:Hide() end

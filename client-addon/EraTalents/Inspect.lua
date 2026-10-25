@@ -79,7 +79,14 @@ function ET.ServesBotInspect()
 end
 
 function ET.RefreshInspect()
+  if ET.RefreshDragonTalents then ET.RefreshDragonTalents() end
   if not InspectTalentFrame then return end
+  if ET.DragonInspectShown and ET.DragonInspectShown() then
+    if ET.inspectView then ET.inspectView.frame:Hide() end
+    if ET.inspectStatus then ET.inspectStatus:Hide() end
+    SetStockSuppressed(true)
+    return
+  end
   local guid = ET.inspect.current
   local e = guid and ET.inspect.cache[guid]
   local shown = guid and InspectTalentFrame:IsShown()
@@ -87,30 +94,13 @@ function ET.RefreshInspect()
   local historical = shown and e and e.managed
   if waiting or historical then
     SetStockSuppressed(true)
-    if waiting or e.partial then
+    if waiting then
       ShowStatus(L["Loading talent data..."])
       return
     end
-    if not ET.state.serverGen then
-      ShowStatus(L["Waiting for server talent data..."])
-      return
-    end
-    if ET.state.clientGen ~= ET.state.serverGen then
-      ShowStatus(L["Install the matching EraTalents client patch and restart the game."])
-      return
-    end
-    local byClass = EraTalentsData and EraTalentsData[e.era]
-    local tree = byClass and byClass[e.classId]
-    local valid = tree ~= nil
-    local nodeRanks = {}
-    if tree then
-      for _, node in ipairs(tree.talents) do nodeRanks[node.id] = node.maxRank end
-      for id, rank in pairs(e.ranks) do
-        if not nodeRanks[id] or rank > nodeRanks[id] then valid = false; break end
-      end
-    end
-    if not valid then
-      ShowStatus(L["Install the matching EraTalents addon and reload the interface."])
+    local tree, status = ET.TalentData(e, e.classId)
+    if not tree then
+      ShowStatus(status)
       return
     end
     if ET.inspectStatus then ET.inspectStatus:Hide() end
@@ -137,21 +127,27 @@ function ET.OpenBotInspect(unit, toggle)
   local guid = UnitGUID(unit)
   if not guid then return false end
   if InspectFrame and InspectFrame:IsShown() and InspectFrame.unit and UnitGUID(InspectFrame.unit) == guid
-     and InspectTalentFrame and InspectTalentFrame:IsShown() then
-    if toggle then HideUIPanel(InspectFrame) end
+     and ((ET.DragonInspectShown and ET.DragonInspectShown(unit))
+          or (InspectTalentFrame and InspectTalentFrame:IsShown())) then
+    if toggle then
+      if ET.HideDragonInspect then ET.HideDragonInspect() end
+      HideUIPanel(InspectFrame)
+    end
     return true
   end
   InspectUnit(unit)
   if not (InspectFrame and InspectFrame:IsShown() and InspectFrame.unit and UnitGUID(InspectFrame.unit) == guid) then return false end
   -- InspectUnit opens equipment; the native talent tab is disabled below level 10.
   local level = UnitLevel(unit)
-  if level <= 0 or level >= 10 then InspectSwitchTabs(3) end
   ET.inspect.botTarget = guid
+  if level <= 0 or level >= 10 then
+    if not (ET.ShowDragonInspect and ET.ShowDragonInspect(unit)) then InspectSwitchTabs(3) end
+  end
   ET.RefreshInspect()
   return true
 end
 
-local function OnInspectTarget()
+function ET.RefreshInspectTarget()
   if not (InspectFrame and InspectFrame:IsShown()) then return end   -- CanInspect refused: no frame
   local unit = InspectFrame.unit
   local guid = unit and UnitGUID(unit)
@@ -163,8 +159,8 @@ end
 local function AttachInspect()
   if ET._inspectHooked or not InspectFrame or not InspectTalentFrame then return end
   ET._inspectHooked = true
-  hooksecurefunc("InspectFrame_Show", OnInspectTarget)
-  hooksecurefunc("InspectFrame_UnitChanged", OnInspectTarget)
+  hooksecurefunc("InspectFrame_Show", ET.RefreshInspectTarget)
+  hooksecurefunc("InspectFrame_UnitChanged", ET.RefreshInspectTarget)
   -- InspectFrame_Show hides the frame before re-showing it, so every fresh inspect re-requests.
   InspectFrame:HookScript("OnHide", function()
     ET.inspect.current = nil

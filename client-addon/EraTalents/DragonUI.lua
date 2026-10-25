@@ -1,65 +1,104 @@
--- DragonUI's talent module opens its own native WotLK window from the talent micro-button, the
--- talent key bindings, PlayerTalentFrame and the inspect talent tab, so Hook.lua's PlayerTalentFrame
--- guard and Inspect.lua's InspectTalentFrame overlay never see those openers. Era characters get
--- their historical tree in our panel instead, and era-managed inspect targets get the stock inspect
--- tab with our overlay. DragonUI keeps native characters, the pet tree and the glyph page.
+-- Feed historical talent data into DragonUI's existing window and tree renderer.
 EraTalents = EraTalents or {}
 local ET = EraTalents
+local L = ET.L
 
--- DragonUI publishes its addon table as _G.DragonUI; the talent module's functions live on TalentModule.ns.
 local function DragonTalents()
   local dragon = _G.DragonUI
   local module = type(dragon) == "table" and dragon.TalentModule
   local ns = type(module) == "table" and module.ns
-  if type(ns) ~= "table" then return nil end
-  for _, name in ipairs({ "ToggleTalents", "OpenTalents", "ShowInspect", "LeaveInspect", "Repaint",
-                          "GlyphView", "PetView", "SetGlyphPage" }) do
-    if type(ns[name]) ~= "function" then return nil end
-  end
+  if type(ns) ~= "table" or type(ns.ExternalTalentView) ~= "function" then return nil end
   return module, ns
 end
 
-local function ShowPanel()
-  if not (ET.frame and ET.frame:IsShown()) then ET.TogglePanel() end
+local function InspectMatches(unit, guid)
+  return guid and ET.inspect.current == guid and InspectFrame and InspectFrame:IsShown()
+      and InspectFrame.unit and UnitGUID(InspectFrame.unit) == guid and UnitGUID(unit) == guid
 end
 
--- The player's own tree (active or other spec), the view our panel replaces for an era character.
-local function OwnTreeShown(ns)
-  return ns.win ~= nil and ns.win:IsShown() and ns.inspectUnit == nil and not ns.GlyphView() and not ns.PetView()
+local function Describe(ns, own)
+  local unit = not own and ns.inspectUnit or nil
+  local state, classId, guid = ET.state, ET._classId
+  if unit then
+    guid = UnitGUID(unit)
+    state = guid and ET.inspect.cache[guid]
+    if state and not state.managed then return nil end
+    if not state and not (ET.state.serverGen or (ET.inspect.botTarget == guid and ET.ServesBotInspect())) then
+      return nil
+    end
+    classId = state and state.classId
+  elseif not state.isEraChar then
+    return nil
+  end
+
+  local tree, status, byId = ET.TalentData(state, classId)
+  if unit and not InspectMatches(unit, guid) then tree, status = nil, L["Loading talent data..."] end
+  local view = {
+    count = 0, trees = {}, guid = guid, era = state and state.era, classId = classId,
+    depth = state and state.era == 0 and 7 or 9,
+    classToken = tree and tree.className or select(2, UnitClass(unit or "player")),
+    title = unit and (GetUnitName(unit, true) or UnitName(unit) or "") or TALENTS,
+    available = state and state.availPts or 0, status = status,
+    state = state, byId = byId, readOnly = unit ~= nil and not (state and state.editable),
+  }
+  if not tree then return view end
+  view.count, view.depth = 3, 1
+  local spent = ET.SpecPoints(tree, state.ranks)
+  for tab = 1, 3 do
+    view.trees[tab] = { name = ET.TabName(tree.tabs[tab]), points = spent[tab], talents = {} }
+  end
+  for _, node in ipairs(tree.talents) do
+    local rank = state.ranks[node.id] or 0
+    local reachable = ET.IsReachable(node, spent[node.tab], state.ranks, byId)
+    local color = rank >= node.maxRank and "yellow" or reachable and "green" or "locked"
+    if rank == 0 and reachable and (view.available < 1 or view.readOnly) then color = "gray" end
+    local links, pre = {}, byId[node.prereqTalent]
+    if pre then
+      links[1] = { tier = pre.tier + 1, column = pre.col + 1,
+                   active = (state.ranks[pre.id] or 0) >= pre.maxRank }
+    end
+    local entries = view.trees[node.tab].talents
+    entries[#entries + 1] = {
+      index = node.id, name = ET.LocalizedField(node, "name"), icon = "Interface\\Icons\\" .. node.icon,
+      tier = node.tier + 1, column = node.col + 1, rank = rank, state = color,
+      exceptional = node.maxRank == 1,
+      spendable = not view.readOnly and view.available > 0 and reachable, links = links,
+    }
+    view.depth = math.max(view.depth, node.tier + 1)
+  end
+  return view
 end
 
-local function Redirect(ns)
-  if not (ET.state and ET.state.isEraChar) or not OwnTreeShown(ns) then return false end
-  ns.win:Hide()
-  ShowPanel()
+local function FreshNode(ns, node, painted)
+  if not (ns.win and ns.win:IsShown()) or ns.GlyphView() or ns.PetView() then return nil end
+  local view = Describe(ns)
+  if not view or view.status or not painted or view.guid ~= painted.guid
+     or view.era ~= painted.era or view.classId ~= painted.classId then return nil end
+  local talent = view.byId and view.byId[node.index]
+  if talent and talent.tab == node.tree then return talent, view end
+end
+
+function ET.RefreshDragonTalents()
+  local module, ns = DragonTalents()
+  if module and module.applied then ns.Refresh() end
+end
+
+function ET.DragonInspectShown(unit)
+  local module, ns = DragonTalents()
+  if not (module and module.applied and ns.win and ns.win:IsShown() and ns.inspectUnit) then return false end
+  return not unit or UnitGUID(ns.inspectUnit) == UnitGUID(unit)
+end
+
+function ET.ShowDragonInspect(unit)
+  local module, ns = DragonTalents()
+  if not (module and module.applied and ns.win) then return false end
+  ns.ShowInspect(unit)
   return true
 end
 
--- Below the talent level DragonUI shows its own notice, as the stock micro-button stays disabled.
-local function TalentLevel()
-  return UnitLevel("player") >= (SHOW_TALENT_LEVEL or 10)
-end
-
--- Unknown targets on a realm that serves EraTalents wait in the stock tab, where the overlay hides
--- the native tree until ISYNC decides; a denied (native) target stays in DragonUI.
-local function UsesEraInspect(unit)
-  if not unit or not InspectFrame or not InspectFrame:IsShown() or not InspectSwitchTabs then return false end
-  local guid = UnitGUID(unit)
-  local e = guid and ET.inspect and ET.inspect.cache[guid]
-  if e then return e.managed end
-  return ET.state ~= nil and ET.state.serverGen ~= nil
-end
-
-local function AttachWindow(ns)
-  local win = ns.win
-  if not win or win._eraGuarded then return end
-  win._eraGuarded = true
-  local settled = false
-  -- DragonUI's own OnShow paints the native tree first; ours runs after it and closes it again.
-  win:HookScript("OnShow", function() settled = not Redirect(ns) end)
-  win:HookScript("OnHide", function() settled = false end)
-  -- Switching an open window from the pet tree or the glyph page to a player spec only repaints it.
-  hooksecurefunc(ns, "Repaint", function() if settled then Redirect(ns) end end)
+function ET.HideDragonInspect()
+  local module, ns = DragonTalents()
+  if module and module.applied and ns.win and ns.inspectUnit then ns.win:Hide() end
 end
 
 function ET.InitDragonUI()
@@ -67,27 +106,52 @@ function ET.InitDragonUI()
   local module, ns = DragonTalents()
   if not module then return end
   ET._dragonHooked = true
+  ns.ExternalTalents = function(own)
+    local view = Describe(ns, own)
+    if not view then return nil end
+    view.Tooltip = function(node, painted)
+      local talent, fresh = FreshNode(ns, node, painted)
+      if talent then ET.ShowTalentTooltip(node, talent, fresh.state, fresh.readOnly) end
+    end
+    view.Click = function(node, button, painted)
+      if button ~= "LeftButton" then return end
+      local talent, fresh = FreshNode(ns, node, painted)
+      if not talent or fresh.readOnly or fresh.available < 1
+         or (fresh.state.ranks[talent.id] or 0) >= talent.maxRank then return end
+      if not ET.IsReachable(talent, fresh.trees[talent.tab].points, fresh.state.ranks, fresh.byId) then return end
+      if fresh.guid then ET.LearnInspect(fresh.guid, talent.id) else ET.Learn(talent.id) end
+    end
+    return view
+  end
 
-  local toggle, open, showInspect = ns.ToggleTalents, ns.OpenTalents, ns.ShowInspect
-  ns.ToggleTalents = function(...)
-    if not (module.applied and ET.state.isEraChar and TalentLevel()) then return toggle(...) end
-    if ns.win then ns.win:Hide() end
-    ET.TogglePanel()
+  local toggle = ET.TogglePanel
+  ET.TogglePanel = function(...)
+    if module.applied then return ns.ToggleTalents() end
+    return toggle(...)
   end
-  ns.OpenTalents = function(...)
-    if not (module.applied and ET.state.isEraChar and TalentLevel()) then return open(...) end
-    if ns.win then ns.win:Hide() end
-    ShowPanel()
-  end
+
+  local showInspect, leaveInspect = ns.ShowInspect, ns.LeaveInspect
+  local inspected
   ns.ShowInspect = function(unit, ...)
-    if not (module.applied and UsesEraInspect(unit)) then return showInspect(unit, ...) end
-    ns.LeaveInspect()
-    if ns.win then ns.win:Hide() end
-    InspectSwitchTabs(3)
+    if module.applied and unit and UnitExists(unit) then
+      inspected = UnitGUID(unit)
+      if ET.inspect.current ~= inspected and ET.RefreshInspectTarget then ET.RefreshInspectTarget() end
+    end
+    local result = showInspect(unit, ...)
+    if ET.RefreshInspect then ET.RefreshInspect() end
+    return result
+  end
+  ns.LeaveInspect = function(...)
+    local result = leaveInspect(...)
+    if inspected then
+      ET.inspect.cache[inspected] = nil
+      if ET.inspect.current == inspected then ET.inspect.current = nil end
+      if ET.inspect.botTarget == inspected then ET.inspect.botTarget = nil end
+      inspected = nil
+    end
+    return result
   end
 
-  -- /pettalents and the panel's pet button open the stock frame, which DragonUI redirects to its
-  -- own window; open DragonUI's pet view directly instead.
   local openStock = ET.OpenStockTalents
   ET.OpenStockTalents = function(...)
     if not (module.applied and ns.win and UnitExists("pet")) then return openStock(...) end
@@ -96,8 +160,4 @@ function ET.InitDragonUI()
     ns.wantPet = true
     if ns.win:IsShown() then ns.Repaint() else ns.win:Show() end
   end
-
-  -- DragonUI builds its window on login, or later when its talent module is enabled.
-  AttachWindow(ns)
-  if type(ns.BuildWindow) == "function" then hooksecurefunc(ns, "BuildWindow", function() AttachWindow(ns) end) end
 end

@@ -13,7 +13,7 @@ Changes on `main`:
 - Merges German names, descriptions and aura text into the historical spell rows and translates the addon.
 - Keeps historical spells in their native spell groups and trains priest racial spells through their class quests.
 - Shows inspected bots' historical trees and lets owners train their controlled altbots.
-- Opens historical trees from DragonUI's talent window and keeps the inspect tree above the Inspect frame.
+- Shows Vanilla and TBC trees inside DragonUI's talent window for your character, inspected players and MultiBot altbots, using each character's own earned era.
 - Sends each character's trainer list to DragonUI's spellbook and level-up notice, closes the glyph page before earned Wrath and shows MultiBot bot spellbooks in DragonUI's own book, filled with the bot's spells and trainer list.
 
 The server pins a tested commit of `main` in its `versions.lock.json`. Upstream updates are merged into `main`; the original README follows.
@@ -86,8 +86,9 @@ module explicitly or apply the portable startup profiles; the module's own defau
 ### Client install (each player)
 Two pieces, both required for the intended experience:
 * **The EraTalents addon** — copy `client-addon/EraTalents/` to
-  `World of Warcraft/Interface/AddOns/EraTalents/`. It **is** the talent window in Vanilla/TBC (the
-  normal talent button/key opens it).
+  `World of Warcraft/Interface/AddOns/EraTalents/`. With the matching DragonUI addon, the normal
+  talent button/key opens historical trees in DragonUI's window. Without DragonUI, EraTalents
+  provides its own talent panel and stock inspect overlay.
 * **`patch-V.mpq`** — copy to `World of Warcraft/Data/`. This is IP's own client patch with this
   module's custom spell and skill-line rows merged in. It is required: the client must know the
   historical usable spells, trainer requirements and aura descriptions, not only cosmetic icons.

@@ -34,10 +34,14 @@ ET.state = { ranks = {} }
 ET.ParseSync(ET.state, "SYNC 0 1 47 1/2 18001:3,18002:1")
 assert(ET.state.era == 0 and ET.state.availPts == 47, "chunk 1 header parsed past sentinel")
 assert(ET.state.isEraChar == true, "chunk 1 managed flag parsed")
+assert(ET.state.partial == true, "own tree stays pending until all chunks arrive")
 assert(ET.state.ranks[18001] == 3 and ET.state.ranks[18002] == 1, "chunk 1 ranks parsed")
 ET.ParseSync(ET.state, "SYNC 0 1 47 2/2 18003:5")
 assert(ET.state.ranks[18001] == 3, "chunk 2 (seq>1) accumulates — keeps chunk-1 ranks, no reset")
 assert(ET.state.ranks[18003] == 5, "chunk 2 merged its new rank")
+assert(ET.state.partial == false, "own tree completes after the final chunk")
+ET.ParseSync(ET.state, "SYNC 1 1 51 2/2 946003:1")
+assert(ET.state.era == 0 and ET.state.ranks[946003] == nil, "orphan continuation leaves the complete tree unchanged")
 print("comms OK")
 
 -- GEN canary: server stamp vs client sentinel spell 932999

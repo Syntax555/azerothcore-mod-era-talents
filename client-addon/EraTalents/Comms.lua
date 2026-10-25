@@ -26,10 +26,12 @@ function ET.ParseSync(state, message)
   else
     isFirst = true   -- sentinel-less message = single chunk = reset
   end
+  if not isFirst and not state.partial then return true end
   state.era = tonumber(era)
   state.availPts = tonumber(pts)
   state.isEraChar = (tonumber(managed) == 1)
   if isFirst then state.ranks = {} end
+  state.partial = seq ~= nil and tonumber(seq) < tonumber(total)
   for id, rank in string.gmatch(rest, "(%d+):(%d+)") do
     state.ranks[tonumber(id)] = tonumber(rank)
   end
