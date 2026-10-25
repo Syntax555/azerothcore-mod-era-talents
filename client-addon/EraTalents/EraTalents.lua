@@ -12,6 +12,7 @@ function ET.Init()
   ET._inited = true
   if ET.InitDragonUIBook then ET.InitDragonUIBook() end
   if ET.InitDragonUIGlyphs then ET.InitDragonUIGlyphs() end
+  if ET.InitBotBook then ET.InitBotBook() end
   if ET.InitComms then ET.InitComms() end
   if ET.InitUI then ET.InitUI() end
   if ET.InitHook then ET.InitHook() end

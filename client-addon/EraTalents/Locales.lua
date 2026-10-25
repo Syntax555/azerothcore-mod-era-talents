@@ -37,6 +37,17 @@ local deDE = {
   ["Subtlety"] = "Täuschung", ["Survival"] = "Überleben",
   ["Glyphs become available once this character has earned Wrath of the Lich King."] =
     "Glyphen stehen zur Verfügung, sobald dieser Charakter Wrath of the Lich King erspielt hat.",
+  ["%s's Spellbook"] = "Zauberbuch von %s",
+  ["Trainable"] = "Erlernbar",
+  ["Available at level %d"] = "Verfügbar ab Stufe %d",
+  ["Requires talent"] = "Benötigt Talent",
+  ["Requires %s"] = "Benötigt %s",
+  ["Skipped by the bot"] = "Vom Bot übersprungen",
+  ["Left-click: cast. Right-click: macro."] = "Linksklick: wirken. Rechtsklick: Makro.",
+  ["Clear the box to make the bot skip it."] = "Entfernt das Häkchen, damit der Bot ihn auslässt.",
+  ["Training cost: %s"] = "Trainingskosten: %s",
+  ["Page %d/%d"] = "Seite %d/%d",
+  ["Blood"] = "Blut", ["Unholy"] = "Unheilig",
 }
 ET.L = setmetatable(ET.locale == "deDE" and deDE or {}, {
   __index = function(_, key) return key end,
