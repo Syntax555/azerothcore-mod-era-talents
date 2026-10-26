@@ -32,13 +32,13 @@ local SHAPES = {
                 scroll = "spellbook-item-needtrainer-iconframe-backplate", -10, 1, 2, -5 },
 }
 local SHAPE_PARTS = { "ring", "hover", "scroll" }
-local INK = { 0.1804, 0.1059, 0.0588 }
 
 -- DragonUI's spellbook module and the addon around it, when they offer what the book uses.
 local function DragonBook()
   local dragon = _G.DragonUI
   local book = type(dragon) == "table" and dragon.SpellbookModule
   if type(book) ~= "table" or type(book.FlowSections) ~= "function" or type(book.FitWindow) ~= "function"
+      or type(book.InkLabel) ~= "function"
       or type(_G.DragonUI_NineSlice) ~= "table" then
     return nil
   end
@@ -189,6 +189,14 @@ local function BotUnit(name)
   return MultiBot.toUnit and MultiBot.toUnit(name) or nil
 end
 
+local function SetSpellbookButton(name, enabled)
+  local units = MultiBot.frames and MultiBot.frames["MultiBar"] and MultiBot.frames["MultiBar"].frames["Units"]
+  local unit = units and units.frames and units.frames[name or ""]
+  local button = unit and unit.getButton and unit.getButton("Spellbook")
+  local set = button and button[enabled and "setEnable" or "setDisable"]
+  if set then set() end
+end
+
 local function CurrentModel()
   local unit = BotUnit(view.name)
   local guid = unit and UnitGUID(unit)
@@ -221,14 +229,7 @@ local function OnWell(piece, well, shape, grow)
 end
 
 local function InkLabel(parent, layer, fontObject, size)
-  local ink = parent:CreateFontString(nil, layer, fontObject)
-  local font = _G[fontObject] and _G[fontObject].GetFont and _G[fontObject]:GetFont()
-  if font then ink:SetFont(font, size) end
-  ink:SetTextColor(INK[1], INK[2], INK[3])
-  ink:SetShadowColor(0, 0, 0, 0)
-  ink:SetShadowOffset(0, 0)
-  ink:SetJustifyH("LEFT")
-  return ink
+  return DragonBook().InkLabel(parent, layer, fontObject, size)
 end
 
 local function PaintHover(card)
@@ -726,10 +727,7 @@ local function BuildFrame()
   frame:SetScript("OnShow", Render)
   -- MultiBot shows a bot's spellbook button pressed while its book is open.
   frame:SetScript("OnHide", function()
-    local units = MultiBot.frames and MultiBot.frames["MultiBar"] and MultiBot.frames["MultiBar"].frames["Units"]
-    local unit = units and units.frames and units.frames[view.name or ""]
-    local button = unit and unit.getButton and unit.getButton("Spellbook")
-    if button and button.setDisable then button.setDisable() end
+    SetSpellbookButton(view.name, false)
   end)
 end
 
@@ -746,6 +744,7 @@ function ET.ShowBotBook(name)
   local guid = unit and UnitGUID(unit)
   if guid then ET.RequestBook(guid) end
   frame:Show()
+  SetSpellbookButton(name, true)
   Render()
 end
 
@@ -759,8 +758,15 @@ function ET.InitBotBook()
   local spellbook = type(MultiBot) == "table" and MultiBot.spellbook
   if type(spellbook) ~= "table" or not DragonBookOn() or spellbook._eraBotBook then return end
   spellbook._eraBotBook = true
-  local hide, visible = spellbook.Hide, spellbook.IsVisible
-  spellbook.Show = function(self)
+  local show, hide, visible = spellbook.Show, spellbook.Hide, spellbook.IsVisible
+  spellbook.Show = function(self, ...)
+    if not DragonBookOn() then
+      if frame then frame:Hide() end
+      show(self, ...)
+      SetSpellbookButton(self.name, true)
+      return
+    end
+    if visible(self) then hide(self) end
     ET.ShowBotBook(self.name)
   end
   spellbook.Hide = function(self, ...)
