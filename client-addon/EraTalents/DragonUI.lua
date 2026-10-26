@@ -51,7 +51,7 @@ local function Describe(ns, own)
     local rank = state.ranks[node.id] or 0
     local reachable = ET.IsReachable(node, spent[node.tab], state.ranks, byId)
     local color = rank >= node.maxRank and "yellow" or reachable and "green" or "locked"
-    if rank == 0 and reachable and (view.available < 1 or view.readOnly) then color = "gray" end
+    if reachable and (view.available < 1 or view.readOnly) then color = rank > 0 and "yellow" or "gray" end
     local links, pre = {}, byId[node.prereqTalent]
     if pre then
       links[1] = { tier = pre.tier + 1, column = pre.col + 1,
