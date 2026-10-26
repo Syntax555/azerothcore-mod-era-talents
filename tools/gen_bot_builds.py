@@ -18,7 +18,18 @@ Coverage is enforced: every (era, class) with nodes in the manifest needs an ord
 specTabs 0-2 (druid additionally 3 = playerbots' feral-cat pseudo-spec), so shipping a new
 class dataset FAILS this tool until its orders are authored — author them, re-run, paste.
 """
-import sys, pathlib, yaml
+import argparse
+import pathlib
+import re
+import sys
+
+import yaml
+
+parser = argparse.ArgumentParser(description=__doc__)
+mode = parser.add_mutually_exclusive_group()
+mode.add_argument("--check", action="store_true", help="check the generated C++ table without changing files")
+mode.add_argument("--write", action="store_true", help="replace the generated C++ table")
+args = parser.parse_args()
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 CLASS_IDS = {"WARRIOR":1,"PALADIN":2,"HUNTER":3,"ROGUE":4,"PRIEST":5,"SHAMAN":7,"MAGE":8,"WARLOCK":9,"DRUID":11}
@@ -130,14 +141,15 @@ BUILDS = {
  ("TBC","PALADIN",2): [20043,20044,20045,20049,20048,20053,20050,20055,20056,20057,20060,20054,20059,20062,20063,20058,20042,  # Retribution: SoC@11 Sanctity@23 Repentance@31 Crusader Strike@43
                  20000,20001],  # Holy spill: Divine Strength, Divine Intellect
  # ---- DRUID ----
+ # Feral PvE 0/44/17: https://www.wowhead.com/tbc/guide/classes/druid/feral/dps-talent-builds-pve
  ("TBC","DRUID",0): [20100,20104,20105,20103,20107,20108,20109,20112,20110,20111,20113,20114,20117,20116,20119,20120,20115,  # Balance: Insect Swarm@13 Nature's Grace@21 Moonkin@36 Force of Nature@45
                20143,20144,20146,20147],  # Resto spill: Furor, Naturalist, Natural Shapeshifter, Intensity
- ("TBC","DRUID",1): [20121,20125,20123,20127,20128,20130,20131,20133,20132,20126,20136,20135,20138,20137,20140,20141,20139,20124,20122,  # Feral (bear/tank): Feral Charge@12 HotW@33 LotP@34 Mangle@43
-               20143,20144],  # Resto spill: Furor, Naturalist
+ ("TBC","DRUID",1): [20121,20125,20123,20127,20128,20130,20131,20133,20132,20126,20129,20135,20136,20138,20139,20140,20141,  # Feral PvE 0/44/17: threat, armor, crit immunity and Mangle
+               20143,20144,20146,20147,20149],  # Furor, Naturalist, Natural Shapeshifter, Intensity, Omen
  ("TBC","DRUID",2): [20142,20145,20147,20149,20144,20151,20152,20153,20156,20158,20157,20160,20161,20155,20159,20150,  # Restoration: Omen@14 NS@23 Swiftmend@34 Tree of Life@43
                20100,20104,20105],  # Balance spill: Starlight Wrath, Focused Starlight, Imp Moonfire
- ("TBC","DRUID",3): [20121,20122,20128,20127,20126,20129,20130,20131,20132,20133,20135,20136,20138,20139,20140,20141,20123,20124,20125,  # Feral (cat): Primal Fury@23 HotW@31 LotP@35 Mangle@43
-               20143,20144],  # Resto spill: Furor, Naturalist
+ ("TBC","DRUID",3): [20121,20125,20123,20127,20128,20126,20129,20130,20131,20132,20133,20135,20136,20138,20139,20140,20141,  # Feral PvE 0/44/17: early cat mobility and Shred, with shared bear mitigation
+               20143,20144,20146,20147,20149],  # Powershifting and Omen; same end build, different leveling order
  # ---- SHAMAN ----
  ("TBC","SHAMAN",0): [20201,20200,20205,20207,20204,20209,20212,20211,20213,20215,20216,20214,20218,20219,20217,  # Elemental: Elemental Focus@11 Elemental Fury@23 Elemental Mastery@36 Totem of Wrath@45
                 20242,20245,20246],  # Resto spill: Tidal Focus, Totemic Focus, Nature's Guidance
@@ -164,7 +176,7 @@ BUILDS = {
                 20522,20523,20524],                                                                   # Holy spill: Healing Focus, Imp Renew, Holy Specialization
  ("TBC","PRIEST",1): [20524,20523,20522,20526,20527,20529,20531,20530,20532,20535,20534,20533,20537,20536,20538,20539,20541,20542,  # Holy: Holy Nova@16 Spirit of Redemption@32 Lightwell@45 Circle of Healing@51
                 20500,20503,20504],                                                                   # Discipline spill: Unbreakable Will, Imp PW:F, Imp PW:S
- ("TBC","PRIEST",2): [20543,20547,20546,20545,20550,20549,20548,20553,20552,20555,20556,20557,20554,20559,20560,20561,20562,20563,  # Shadow: Mind Flay@16 VE@31 Silence@37 Shadowform@43 Vampiric Touch@54
+ ("TBC","PRIEST",2): [20543,20547,20550,20546,20545,20553,20555,20557,20559,20560,20556,20552,20562,20563,20549,20561,20548,20554,  # Shadow: Mind Flay@11 VE@22 Shadowform@31 Vampiric Touch@41
                 20500,20503],                                                                         # Discipline spill: Unbreakable Will, Imp PW:F
  # ---- HUNTER ----
  ("TBC","HUNTER",0): [20600,20601,20602,20604,20608,20610,20609,20612,20611,20613,20615,20614,20617,20616,20619,20620,  # BM: Intimidation@26 Frenzy@32 Bestial Wrath@40 The Beast Within@49
@@ -248,5 +260,19 @@ for (en, cn, tab), order in sorted(BUILDS.items(), key=lambda kv: (list(ERAS).in
     ids = ", ".join(str(i) for i in order)
     out.append(f"        {{ {{ {ERAS[en][0]}, CLASS_{cn}, {tab} }}, {{ {ids} }} }},")
 out.append("    };")
-print("\n----- C++ table -----")
-print("\n".join(out))
+table = "\n".join(out)
+source = REPO / "src/EraTalentBots.cpp"
+current = source.read_text()
+pattern = r"(?ms)^    const std::map<std::tuple<uint8, uint8, int>, std::vector<uint32>> kAuthoredOrders = \{.*?^    \};"
+match = re.search(pattern, current)
+if not match:
+    sys.exit("Missing kAuthoredOrders in src/EraTalentBots.cpp")
+if args.check:
+    if match.group() != table:
+        sys.exit("Stale kAuthoredOrders in src/EraTalentBots.cpp; run tools/gen_bot_builds.py --write")
+    print("All authored bot build orders match src/EraTalentBots.cpp")
+elif args.write:
+    source.write_text(current[:match.start()] + table + current[match.end():])
+else:
+    print("\n----- C++ table -----")
+    print(table)

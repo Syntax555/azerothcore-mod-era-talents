@@ -98,9 +98,13 @@ namespace
     {
         if (!bot)
             return;
-        std::lock_guard<std::mutex> guard(g_botCacheMutex);
-        g_specTabsCache.erase(bot->GetGUID());
-        g_resolveCache.erase(bot->GetGUID());   // spellbook mutations track era-row mutations
+        {
+            std::lock_guard<std::mutex> guard(g_botCacheMutex);
+            g_specTabsCache.erase(bot->GetGUID());
+            g_resolveCache.erase(bot->GetGUID());   // spellbook mutations track era-row mutations
+        }
+        if (PlayerbotAI* ai = GET_PLAYERBOT_AI(bot))
+            ai->InvalidateCombatProfile();
     }
 
     // TBC faction DPS seals, stripped on bot login and level changes. The factory's trainer walk
@@ -222,8 +226,8 @@ namespace
         { { ERA_TBC, CLASS_PRIEST, 0 }, { 20500, 20502, 20503, 20504, 20507, 20508, 20510, 20512, 20513, 20514, 20516, 20515, 20518, 20519, 20520, 20521, 20522, 20523, 20524 } },
         // TBC Priest specTab 1: holy_specialization, improved_renew, healing_focus, divine_fury, ...
         { { ERA_TBC, CLASS_PRIEST, 1 }, { 20524, 20523, 20522, 20526, 20527, 20529, 20531, 20530, 20532, 20535, 20534, 20533, 20537, 20536, 20538, 20539, 20541, 20542, 20500, 20503, 20504 } },
-        // TBC Priest specTab 2: spirit_tap, shadow_focus, improved_shadow_word_pain, shadow_affinity, ...
-        { { ERA_TBC, CLASS_PRIEST, 2 }, { 20543, 20547, 20546, 20545, 20550, 20549, 20548, 20553, 20552, 20555, 20556, 20557, 20554, 20559, 20560, 20561, 20562, 20563, 20500, 20503 } },
+        // TBC Priest specTab 2: spirit_tap, shadow_focus, mind_flay, improved_shadow_word_pain, ...
+        { { ERA_TBC, CLASS_PRIEST, 2 }, { 20543, 20547, 20550, 20546, 20545, 20553, 20555, 20557, 20559, 20560, 20556, 20552, 20562, 20563, 20549, 20561, 20548, 20554, 20500, 20503 } },
         // TBC Shaman specTab 0: concussion, convection, elemental_focus, call_of_thunder, ...
         { { ERA_TBC, CLASS_SHAMAN, 0 }, { 20201, 20200, 20205, 20207, 20204, 20209, 20212, 20211, 20213, 20215, 20216, 20214, 20218, 20219, 20217, 20242, 20245, 20246 } },
         // TBC Shaman specTab 1: ancestral_knowledge, thundering_strikes, shamanistic_focus, enhancing_totems, ...
@@ -245,11 +249,11 @@ namespace
         // TBC Druid specTab 0: starlight_wrath, focused_starlight, improved_moonfire, control_of_nature, ...
         { { ERA_TBC, CLASS_DRUID, 0 }, { 20100, 20104, 20105, 20103, 20107, 20108, 20109, 20112, 20110, 20111, 20113, 20114, 20117, 20116, 20119, 20120, 20115, 20143, 20144, 20146, 20147 } },
         // TBC Druid specTab 1: ferocity, thick_hide, feral_instinct, feral_charge, ...
-        { { ERA_TBC, CLASS_DRUID, 1 }, { 20121, 20125, 20123, 20127, 20128, 20130, 20131, 20133, 20132, 20126, 20136, 20135, 20138, 20137, 20140, 20141, 20139, 20124, 20122, 20143, 20144 } },
+        { { ERA_TBC, CLASS_DRUID, 1 }, { 20121, 20125, 20123, 20127, 20128, 20130, 20131, 20133, 20132, 20126, 20129, 20135, 20136, 20138, 20139, 20140, 20141, 20143, 20144, 20146, 20147, 20149 } },
         // TBC Druid specTab 2: improved_mark_of_the_wild, nature_s_focus, intensity, omen_of_clarity, ...
         { { ERA_TBC, CLASS_DRUID, 2 }, { 20142, 20145, 20147, 20149, 20144, 20151, 20152, 20153, 20156, 20158, 20157, 20160, 20161, 20155, 20159, 20150, 20100, 20104, 20105 } },
-        // TBC Druid specTab 3: ferocity, feral_aggression, sharpened_claws, feral_charge, ...
-        { { ERA_TBC, CLASS_DRUID, 3 }, { 20121, 20122, 20128, 20127, 20126, 20129, 20130, 20131, 20132, 20133, 20135, 20136, 20138, 20139, 20140, 20141, 20123, 20124, 20125, 20143, 20144 } },
+        // TBC Druid specTab 3: ferocity, thick_hide, feral_instinct, feral_charge, ...
+        { { ERA_TBC, CLASS_DRUID, 3 }, { 20121, 20125, 20123, 20127, 20128, 20126, 20129, 20130, 20131, 20132, 20133, 20135, 20136, 20138, 20139, 20140, 20141, 20143, 20144, 20146, 20147, 20149 } },
     };
 
     // A fresh build follows the configured PvE spec mix (Playerbots.RandomClassSpecProb spec
@@ -372,11 +376,8 @@ namespace EraTalentBots
                     specTab = tab;
             if (bot->getClass() == CLASS_DRUID && specTab == 1)
             {
-                // Both feral orders open with Ferocity, so a seeded cat stays cat until it diverges.
-                uint32 catNode = era == ERA_VANILLA ? 18717 : 20122;
-                uint32 bearNode = era == ERA_VANILLA ? 18720 : 20125;
-                if (EraTalents::CurrentRank(bot, era, bearNode) == 0 &&
-                    (EraTalents::CurrentRank(bot, era, catNode) > 0 || SeedSpecTab(bot) == 3))
+                // Cat and bear PvE builds both learn Thick Hide; the seeded role stays stable.
+                if (EraTalentBots_FeralSpec(bot) == 3)
                     specTab = 3;
             }
         }
@@ -456,6 +457,15 @@ namespace EraTalentBots
 bool EraTalentBots_FactoryReconcile(Player* bot, int specTab)
 {
     return EraTalentBots::FactoryReconcile(bot, specTab);
+}
+
+int EraTalentBots_FeralSpec(Player* bot)
+{
+    if (Gated(bot) || !SpendsOwnPoints(bot) || bot->getClass() != CLASS_DRUID ||
+        !EraHasTalentTrees(bot, EraTransition::StoredEra(bot)))
+        return -1;
+    int const spec = SeedSpecTab(bot);
+    return spec == 1 || spec == 3 ? spec : -1;
 }
 
 bool EraTalentBots_SpecTabs(Player* p, uint32* tabs3)

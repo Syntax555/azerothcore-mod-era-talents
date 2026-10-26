@@ -54,6 +54,8 @@ bool EraTalentBots_FactoryReconcile(Player* bot, int specTab);
 // InvalidateSpecCache, and logout).
 // Returns false (native path) for unmanaged bands, no rows, or (bots) knob off.
 bool EraTalentBots_SpecTabs(Player* bot, uint32* tabs3);
+// Stable authored random-druid intent: 1 = bear, 3 = cat, -1 = no seeded feral role.
+int EraTalentBots_FeralSpec(Player* bot);
 // Era-transparent spell lookup for the bot AI's hardcoded stock-id tables (patch 0021).
 // Semantics: the spell id this character KNOWS for stock spell `stockSpellId` —
 //   * knows the stock id itself -> stockSpellId (native bots, WotLK band, knob off);
