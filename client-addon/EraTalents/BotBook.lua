@@ -392,7 +392,10 @@ local function Layout(wide, scale)
     art.right:SetPoint("TOPLEFT", stage, "TOPLEFT", 2, -82)
     art.right:SetPoint("BOTTOMRIGHT", stage, "BOTTOMRIGHT", 0, 2)
   end
-  Atlas(art.wood, wide and "spellbook-background-evergreen-header" or "spellbook-header-left-half")
+  art.wood:ClearAllPoints()
+  art.wood:SetPoint("TOPLEFT", stage, "TOPLEFT", 8, -26)
+  art.wood:SetPoint("TOPRIGHT", stage, wide and "TOP" or "TOPRIGHT", wide and 0 or -8, -26)
+  if wide then art.woodRight:Show() else art.woodRight:Hide() end
   Atlas(frame.mode:GetNormalTexture(), wide and "redbutton-condense" or "redbutton-expand")
   Atlas(frame.mode:GetPushedTexture(), (wide and "redbutton-condense" or "redbutton-expand") .. "-pressed")
   -- Pager, page corner, search and tabs stay at scale 1 on the scaled book, like DragonUI's.
@@ -520,9 +523,13 @@ local function BuildPaper(stage)
   art.ribbon:SetPoint("TOP", stage, "TOP", 0, -82)
   art.ribbon:SetPoint("BOTTOM", stage, "BOTTOM", 0, 2)
   art.wood = paper:CreateTexture(nil, "ARTWORK")
+  Atlas(art.wood, "spellbook-header-left-half")
   art.wood:SetHeight(58)
-  art.wood:SetPoint("TOPLEFT", stage, "TOPLEFT", 8, -26)
-  art.wood:SetPoint("TOPRIGHT", stage, "TOPRIGHT", -8, -26)
+  art.woodRight = paper:CreateTexture(nil, "ARTWORK")
+  Atlas(art.woodRight, "spellbook-header-right-half")
+  art.woodRight:SetHeight(58)
+  art.woodRight:SetPoint("TOPLEFT", stage, "TOP", 0, -26)
+  art.woodRight:SetPoint("TOPRIGHT", stage, "TOPRIGHT", -8, -26)
   return art
 end
 
