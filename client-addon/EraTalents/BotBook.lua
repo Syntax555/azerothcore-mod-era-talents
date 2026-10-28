@@ -762,8 +762,9 @@ local function OnBotBook(guid, kind)
 end
 
 function ET.InitBotBook()
+  local book, dragon = DragonBook()
   local spellbook = type(MultiBot) == "table" and MultiBot.spellbook
-  if type(spellbook) ~= "table" or not DragonBookOn() or spellbook._eraBotBook then return end
+  if type(spellbook) ~= "table" or not book or spellbook._eraBotBook then return end
   spellbook._eraBotBook = true
   local show, hide, visible = spellbook.Show, spellbook.Hide, spellbook.IsVisible
   spellbook.Show = function(self, ...)
@@ -782,6 +783,13 @@ function ET.InitBotBook()
   end
   spellbook.IsVisible = function(self, ...)
     return (frame ~= nil and frame:IsShown()) or visible(self, ...)
+  end
+  -- DragonUI can change the running book without a reload; keep an open bot book on that route.
+  local function syncBook()
+    if frame and frame:IsShown() or visible(spellbook) then spellbook:Show() end
+  end
+  for _, action in ipairs({ "RefreshSpellbookSystem", "RestoreSpellbookSystem" }) do
+    if type(dragon[action]) == "function" then hooksecurefunc(dragon, action, syncBook) end
   end
   table.insert(ET.bookHandlers, OnBotBook)
 end
