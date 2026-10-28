@@ -1,5 +1,13 @@
 # TBC Reconcile / Marker Decision Table
 
+> Imported upstream authoring reference. The [fork README](../README.md) and
+> [integration guide](patches.md) define the supported portable behavior and
+> workflow. Phase plans, level-based grants, patch commands and runtime records
+> below describe upstream development; verify them against current source and
+> earned-play rules before use. The
+> [original document](https://github.com/lathcf/azerothcore-mod-era-talents/blob/0dac15c4a71d4393f4a2dd8553c460a18db3fbc8/docs/era-talents-tbc-reconcile-triage.md)
+> preserves its imported context.
+
 Phase 0 pickup doc for the "final TBC enablement" task. Read this alongside
 `docs/era-talents-framework.md` and `docs/era-talents-tbc-workflow.md`.
 

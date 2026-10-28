@@ -1,37 +1,27 @@
-# Verification records
+# Validation
 
-## 2026-09-07 — stock-core compile without mod-playerbots
-- Stock azerothcore-wotlk master `c80c4b9` + mod-individual-progression `977e200` + this module at `0fb306f`.
-- `apply-patches.sh` on stock master:
-  ```
-  ==> mod-era-talents patches -> <ac-root>
-      applied:         core/01-shatter-crit-vs-frozen.patch
-      applied:         core/02-corruption-era-casttime.patch
-      applied:         core/03-hotw-era-bear-stamina.patch
-      applied:         core/04-sentry-era-unsummon.patch
-      applied:         core/05-wand-spec-era-no-spell-leak.patch
-      applied:         core/06-molten-fury-era-window.patch
-      applied:         individual-progression/01-manual-advance-states.patch
-      (mod-playerbots not present — bot patches skipped)
-      (mod-multibot-bridge not present — bridge patch skipped)
-  ==> done
-  ```
-  exit=0 — all 6 core patches and the IP patch apply cleanly to stock master, unmodified.
-- cmake: `[mod-era-talents] mod-playerbots not found — bot support compiled out (players only)`
-- 16/16 module translation units compiled (compile_commands.json, MOD_PLAYERBOTS undefined).
+The fork's **Portable integration** workflow prepares the portable server's
+pinned dependencies, substitutes this module's proposed commit and runs the
+selected native integration fixtures. It also checks addon locale behavior and
+Lua fixtures. The **Latest** workflow checks Lua 5.1 syntax and packages the
+addon-only ZIP. Complete server builds and combined client-pack verification
+run in the portable repository.
 
-## 2026-09-07 — dev-box full build with mod-playerbots (AzerothCore overlay stack)
-- Fork `413bea61` + mod-playerbots `b949b50` + IP `977e200` + bridge `759c100`, this module at `e10f859`, consumed as a clone via the overlay's `setup.sh`.
-- `apply-patches.sh` after the overlay's own 14 patches: 10/10 applied. cmake: `mod-playerbots found — bot era talents compiled in`. Build exit 0.
-- Worldserver: `loaded 1011 talent nodes (generation c8293d48)`; `.eratalents doctor` on a TBC-band rogue bot: 0 orphans, AI resolve working; a shaman bot levelled 40→65 shows the TBC quest-taught totems (947026 / 3599 / 947174).
+Before committing, follow [AGENTS.md](../AGENTS.md) and run the checks relevant
+to the changed production sources and integrations. For dataset changes,
+regenerate SQL, addon data and client artifacts together; see
+[client packaging](../client-patch/README.md) and the
+[portable check guide](https://github.com/Syntax555/mod-playerbots-portable/blob/main/docs/building.md#integration-checks).
+Documentation-only work uses documentation and link checks.
 
-## 2026-09-25 — inspect view (ERATAL INSPECT / ISYNC)
-- This module at `a7bf919` on the overlay stack (fork `413bea61`, mod-playerbots `b949b50`). Worldserver build exit 0; `EraTalentBots.cpp` / `EraTalentsComms.cpp` compiled warning-free; binary canary: `ISYNC` present.
-- Headless: `test_inspect.lua`, `test_comms.lua`, `test_tooltip.lua` pass; `pytest tools` 249 passed; `era_audit` 0 findings. No YAML/generator change — generation stamp unchanged, no `patch-V.mpq` re-ship.
-- Real 3.3.5a client (Inspect → Talents on a grouped bot, level set with `.character level`), all passing:
-  - level 40 → Vanilla era tree, opens on the primary tree, footer `a/b/c` matches `.eratalents doctor`; top tabs switch trees; no "Next rank"; clicks inert;
-  - level 65 → TBC era tree, scrolls to the tier-9 capstone;
-  - level 75 → stock WotLK talents, no overlay;
-  - mid-duel inspect → stock view (server denial, `managed=0`);
-  - target switching with the frame open → never shows another character's tree;
-  - own `N` panel unchanged (learning works); the Inspect frame's close button works over the overlay.
+Source fixtures, syntax checks and package verification do not establish full
+in-game coverage of historical class spells or addon windows. Track concrete
+client, training and gameplay validation in the portable
+[validation list](https://github.com/Syntax555/mod-playerbots-portable/blob/main/docs/todo.md#gameplay-validation).
+A report should name the server revision, addon versions, MPQ generation,
+character class/race/level/earned tier and reproducible action; GM/console
+`.eratalents status` and `.eratalents doctor` provide read-only state.
+
+The [imported verification records](https://github.com/lathcf/azerothcore-mod-era-talents/blob/0dac15c4a71d4393f4a2dd8553c460a18db3fbc8/docs/verification.md)
+describe earlier upstream environments. Their level-based development cases and
+runtime results are not validation claims for this fork's earned progression.

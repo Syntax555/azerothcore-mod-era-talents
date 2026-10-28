@@ -1,5 +1,13 @@
 # Era Talents — TBC Era Workflow (kickoff + canonical per-class process)
 
+> Imported upstream authoring reference. The [fork README](../README.md) and
+> [integration guide](patches.md) define the supported portable behavior and
+> workflow. Phase plans, level-based grants, patch commands and runtime records
+> below describe upstream development; verify them against current source and
+> earned-play rules before use. The
+> [original document](https://github.com/lathcf/azerothcore-mod-era-talents/blob/0dac15c4a71d4393f4a2dd8553c460a18db3fbc8/docs/era-talents-tbc-workflow.md)
+> preserves its imported context.
+
 **Status:** COMPLETE — all nine TBC classes shipped and merged to master 2026-09-07 (prepared 2026-08-25, immediately after the Vanilla merge to master).
 **Branch:** `feat/era-talents` (TBC authored here, merged to master 2026-09-07; Vanilla shipped in master `8f15d1d`).
 **Prerequisite reading, in order:** `docs/era-talents-framework.md` (canonical — decision tree,
