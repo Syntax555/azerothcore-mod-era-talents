@@ -1,3 +1,25 @@
+## Portable assembly integration
+
+This **Era Talents** fork is maintained for
+[AzerothCore Playerbots Portable](https://github.com/Syntax555/mod-playerbots-portable/blob/main/README.md). Its original upstream is
+[lathcf/azerothcore-mod-era-talents](https://github.com/lathcf/azerothcore-mod-era-talents), imported at
+[`0dac15c4a71d`](https://github.com/lathcf/azerothcore-mod-era-talents/commit/0dac15c4a71d4393f4a2dd8553c460a18db3fbc8).
+The assembly pins a tested commit of this fork's `main` branch in
+[`versions.lock.json`](https://github.com/Syntax555/mod-playerbots-portable/blob/main/versions.lock.json), together with its matching core and modules.
+
+Use the assembly's [installation and build instructions](https://github.com/Syntax555/mod-playerbots-portable/blob/main/README.md),
+[module catalog](https://github.com/Syntax555/mod-playerbots-portable/blob/main/docs/module-versions.md#server-modules) and
+[Historical talents and client setup](https://github.com/Syntax555/mod-playerbots-portable/blob/main/docs/era-talents.md). Before contributing, read its
+[repository rules](https://github.com/Syntax555/mod-playerbots-portable/blob/main/AGENTS.md) and [fork workflow](https://github.com/Syntax555/mod-playerbots-portable/blob/main/CONTRIBUTING.md#changing-the-server).
+The **Portable integration** workflow checks this fork's current commit against
+the assembly's pinned dependencies with the relevant production fixtures.
+
+The addon-only ZIP from this fork's Latest release needs the matching merged
+client MPQ from the [portable server release](https://github.com/Syntax555/mod-playerbots-portable/blob/main/docs/era-talents.md#install-the-matching-client-files).
+
+---
+
+
 ## mod-playerbots-portable fork
 
 This fork carries what [mod-playerbots-portable](https://github.com/Syntax555/mod-playerbots-portable) needs on top of [lathcf/azerothcore-mod-era-talents](https://github.com/lathcf/azerothcore-mod-era-talents). Work happens on `main`; every push publishes `EraTalents-addon-latest.zip` in the [Latest release](https://github.com/Syntax555/azerothcore-mod-era-talents/releases/latest).
