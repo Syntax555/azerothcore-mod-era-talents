@@ -60,7 +60,7 @@ Bots use the server data without a client installation of their own.
   MultiBot bot spellbooks in its own windows. Its trainer list follows the
   subject's server eligibility. Historical talents fall back to EraTalents and
   bot spellbooks to MultiBot when their DragonUI modules are disabled, including
-  live spellbook switches.
+  live spellbook switches and scale changes.
 
 Install DragonUI's `DragonUI` and `DragonUI_Options` folders separately from its
 [Latest package](https://github.com/Syntax555/DragonUI/releases/latest).

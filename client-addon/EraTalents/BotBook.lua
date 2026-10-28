@@ -791,5 +791,6 @@ function ET.InitBotBook()
   for _, action in ipairs({ "RefreshSpellbookSystem", "RestoreSpellbookSystem" }) do
     if type(dragon[action]) == "function" then hooksecurefunc(dragon, action, syncBook) end
   end
+  if type(book.ApplyScale) == "function" then hooksecurefunc(book, "ApplyScale", Render) end
   table.insert(ET.bookHandlers, OnBotBook)
 end
