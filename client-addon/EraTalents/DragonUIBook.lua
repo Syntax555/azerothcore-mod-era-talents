@@ -3,9 +3,10 @@
 -- the trainer window by earned era, talents and class quests, and it replaces that table for the
 -- player's class. Without a reply DragonUI keeps its own table.
 --
--- The level-up notice also lists riding, dungeons, raids and heroic modes by level. Riding levels
--- come from the riding trainers' own list (RIDING), and instances of a later expansion than the
--- character's earned era stay out.
+-- The level-up notice also lists riding, dungeons, raids, heroic modes and features by level. Riding
+-- levels come from the riding trainers' own list (RIDING), and instances of a later expansion than the
+-- character's earned era stay out. Glyph features follow the server's glyph gate (GLYPHS), and the
+-- Dungeon Finder and dual specialization the realm's own switch and level (UNLOCKS).
 EraTalents = EraTalents or {}
 local ET = EraTalents
 
@@ -44,7 +45,25 @@ local function OnOwnBook(guid, kind)
   if book and type(book.MarkAllDirty) == "function" then book.MarkAllDirty() end
 end
 
+local GLYPH_FEATURES = { glyphs = true, majorGlyph = true, minorGlyph = true }
+
+-- Without a server reply a feature keeps DragonUI's native level.
+local function FeatureRows(base)
+  local state, rows = ET.state, {}
+  for _, row in ipairs(base.features or {}) do
+    local feature = row[2]
+    if feature == "dualSpec" and state.dualSpecLevel then
+      rows[#rows + 1] = { state.dualSpecLevel, feature }
+    elseif not (GLYPH_FEATURES[feature] and state.glyphsAllowed == false)
+        and not (feature == "dungeonFinder" and state.dungeonFinder == false) then
+      rows[#rows + 1] = row
+    end
+  end
+  return rows
+end
+
 local function LevelUpRows(base, key)
+  if key == "features" then return FeatureRows(base) end
   if key == "riding" then
     local riding = ET.books.riding[UnitGUID("player")]
     if riding and not riding.partial then return riding.records end

@@ -160,6 +160,12 @@ function ET.OnAddonMsg(prefix, message)
     ET.state.glyphsAllowed = glyphs == "1"
     return
   end
+  local finder, dualSpec = string.match(message, "^UNLOCKS%s+([01])%s+(%d+)$")
+  if finder then
+    ET.state.dungeonFinder = finder == "1"
+    ET.state.dualSpecLevel = tonumber(dualSpec)
+    return
+  end
   local bguid, kind, complete = ET.ParseBook(ET.books, message)
   if bguid then
     if complete then

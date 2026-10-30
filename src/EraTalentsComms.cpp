@@ -14,6 +14,7 @@
 #include "EraTalentsConfig.h"
 #include "EraTrainerBook.h"
 #include "EraTransition.h"
+#include "LFGMgr.h"
 #include "ObjectAccessor.h"
 #include "ObjectDefines.h"  // INSPECT_DISTANCE
 #include "Player.h"
@@ -247,6 +248,13 @@ namespace EraTalentsComms
         // "GLYPHS <0|1>": whether the glyph gate lets this character use glyphs, so the addon
         // closes a glyph page that could not take one.
         p->Whisper(std::string("ERATAL\tGLYPHS ") + (EraGlyphGate::Allowed(p) ? "1" : "0"), LANG_ADDON, p);
+
+        // "UNLOCKS <finder 0|1> <dualSpecLevel>": the realm's Dungeon Finder switch and dual-spec
+        // level, so the level-up notice announces neither earlier than the server allows.
+        p->Whisper(std::string("ERATAL\tUNLOCKS ") +
+                       (sLFGMgr->isOptionEnabled(lfg::LFG_OPTION_ENABLE_DUNGEON_FINDER) ? "1 " : "0 ") +
+                       std::to_string(sWorld->getIntConfig(CONFIG_MIN_DUALSPEC_LEVEL)),
+                   LANG_ADDON, p);
     }
 }
 
