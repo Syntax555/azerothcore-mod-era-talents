@@ -24,16 +24,22 @@ local TREES = {
   [7] = { "Elemental", "Enhancement", "Restoration" }, [8] = { "Arcane", "Fire", "Frost" },
   [9] = { "Affliction", "Demonology", "Destruction" }, [11] = { "Balance", "Feral Combat", "Restoration" },
 }
+-- What the bot book takes from DragonUI's spellbook module; without any of it MultiBot keeps its own
+-- window.
+local BUILDERS = {
+  "FlowSections", "FitWindow", "WindowSize", "StageShift", "OnBook", "PageLeft", "NameMatches",
+  "InkLabel", "CreateCardFace", "PaintCardFrame", "CreateSectionHeader", "CreatePaperArt", "LayoutPaperArt",
+  "CreateChrome", "DressCloseButton", "CreateModeButton", "PaintModeButton", "CreatePageCorner", "PaintCorner",
+  "CreateSearchBox", "CreatePager", "DressPageArrow", "CreateEmptyLine", "PlaceControlsOn", "PlaceTabs",
+}
+
 -- DragonUI's spellbook module and the addon around it, when they offer what the book uses.
 local function DragonBook()
   local dragon = _G.DragonUI
   local book = type(dragon) == "table" and dragon.SpellbookModule
-  if type(book) ~= "table" or type(book.FlowSections) ~= "function" or type(book.FitWindow) ~= "function"
-      or type(book.InkLabel) ~= "function" or type(book.CreateCardFace) ~= "function"
-      or type(book.PaintCardFrame) ~= "function" or type(book.CreateSectionHeader) ~= "function"
-      or type(book.CreatePaperArt) ~= "function" or type(book.CreateChrome) ~= "function"
-      or type(_G.DragonUI_NineSlice) ~= "table" then
-    return nil
+  if type(book) ~= "table" or type(_G.DragonUI_NineSlice) ~= "table" then return nil end
+  for _, name in ipairs(BUILDERS) do
+    if type(book[name]) ~= "function" then return nil end
   end
   return book, dragon
 end
@@ -132,21 +138,15 @@ function ET.BotBookSubtitle(entry, active)
   return string.format(Text("Available at level %d"), entry.level)
 end
 
-local function Matches(entry, query)
-  local book = DragonBook()
-  if not query then return true end
-  if book and type(book.NameMatches) == "function" then return book.NameMatches(entry.name, query) end
-  return entry.name ~= nil and string.find(string.lower(entry.name), query, 1, true) ~= nil
-end
-
 -- The sections DragonUI flows onto pages: a titled one per talent tree in the class book, one
--- untitled section in the general book. `names` are the trees' display names.
+-- untitled section in the general book. `names` are the trees' display names; `query` is DragonUI's.
 function ET.BotBookSections(trees, cat, names, query)
+  local book = DragonBook()
   local sections = {}
   local function add(title, entries)
     local kept = {}
     for _, entry in ipairs(entries) do
-      if Matches(entry, query) then kept[#kept + 1] = entry end
+      if book.NameMatches(entry.name, query) then kept[#kept + 1] = entry end
     end
     if #kept > 0 then sections[#sections + 1] = { title = title, entries = kept } end
   end
@@ -162,10 +162,6 @@ end
 -- book is empty: without the bot's trainer book no spell has a tree yet.
 local view = { name = nil, cat = CLASS, page = 1, picked = false, query = nil, wide = nil }
 local frame
-
-local function Atlas(texture, name, useSize)
-  if texture and texture.SetAtlasTexture then texture:SetAtlasTexture(name, useSize) end
-end
 
 -- The skip list is MultiBot's: false marks a spell the bot leaves out, "ss" sends the whole list.
 local function ToggleSkip(name, spellID)
@@ -214,10 +210,6 @@ local function Placement()
 end
 
 -- Cards -------------------------------------------------------------------------------------------
-
-local function InkLabel(parent, layer, fontObject, size)
-  return DragonBook().InkLabel(parent, layer, fontObject, size)
-end
 
 local function PaintHover(card)
   local live = card.entry ~= nil and not card.entry.grey
@@ -315,65 +307,25 @@ local function Layout(wide, scale)
   local book = DragonBook()
   frame.wide, frame.scale = wide, scale
   frame:SetSize(book.WindowSize(wide, scale))
-  local width = wide and book.WIDE_W or book.NARROW_W
   local stage = frame.stage
-  stage:SetSize(width, book.HEIGHT)
+  stage:SetSize(wide and book.WIDE_W or book.NARROW_W, book.HEIGHT)
   stage:SetScale(scale)
   stage:ClearAllPoints()
   stage:SetPoint("TOPLEFT", frame, "TOPLEFT", book.StageShift("TOPLEFT", scale))
-  local art = frame.art
-  if wide then art.left:Show(); art.ribbon:Show() else art.left:Hide(); art.ribbon:Hide() end
-  art.right:ClearAllPoints()
-  if wide then
-    art.right:SetPoint("TOPLEFT", stage, "TOP", 1, -82)
-    art.right:SetPoint("BOTTOMRIGHT", stage, "BOTTOMRIGHT", -2, 2)
-  else
-    art.right:SetPoint("TOPLEFT", stage, "TOPLEFT", 2, -82)
-    art.right:SetPoint("BOTTOMRIGHT", stage, "BOTTOMRIGHT", 0, 2)
-  end
-  art.wood:ClearAllPoints()
-  art.wood:SetPoint("TOPLEFT", stage, "TOPLEFT", 8, -26)
-  art.wood:SetPoint("TOPRIGHT", stage, wide and "TOP" or "TOPRIGHT", wide and 0 or -8, -26)
-  if wide then art.woodRight:Show() else art.woodRight:Hide() end
-  Atlas(frame.mode:GetNormalTexture(), wide and "redbutton-condense" or "redbutton-expand")
-  Atlas(frame.mode:GetPushedTexture(), (wide and "redbutton-condense" or "redbutton-expand") .. "-pressed")
-  -- Pager, page corner, search and tabs stay at scale 1 on the scaled book, like DragonUI's.
-  local x, y = book.OnBook("BOTTOMRIGHT", -75, 40, scale)
-  frame.pager:ClearAllPoints()
-  frame.pager:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", x, y)
-  frame.next:ClearAllPoints()
-  frame.next:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", x, y)
-  frame.prev:ClearAllPoints()
-  frame.prev:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", x - 40, y)
-  frame.corner:ClearAllPoints()
-  frame.corner:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", book.OnBook("BOTTOMRIGHT", -15, 6, scale))
-  local searchX, searchY = book.OnBook("TOPRIGHT", -14, -55, scale)
-  frame.search:ClearAllPoints()
-  frame.search:SetPoint("RIGHT", frame, "TOPRIGHT", searchX, searchY)
+  book.LayoutPaperArt(frame.art, stage, wide)
+  book.PaintModeButton(frame.mode)
+  -- Search, pager and page corner stay at scale 1 on the scaled book, like DragonUI's.
+  book.PlaceControlsOn(frame, scale, { top = frame.search, pager = frame.pager, corner = frame.corner,
+                                       arrows = { frame.next, frame.prev } })
 end
 
--- Tabs hang from the wood strip in DragonUI's order, each as wide as its label.
-local function PlaceTabs(scale)
-  local book = DragonBook()
-  local tabX, tabY = book.OnBook("TOPLEFT", 70, -83, scale)
-  tabX = math.max(tabX, 60)
-  for _, cat in ipairs(TAB_ORDER) do
-    local tab = frame.tabs[cat]
-    tab:ClearAllPoints()
-    tab:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", tabX, tabY)
-    tabX = tabX + (tab:GetWidth() or 0) + 1
-  end
-end
-
--- DragonUI's tab art and width, then their places. Blizzard's OnShow resize undoes the width, and
--- DragonUI calls this again afterwards, as it does for its own book.
-local function SkinTabs()
-  local panel = _G.DragonUI and _G.DragonUI.CharacterPanel
-  for _, cat in ipairs(TAB_ORDER) do
-    local tab = frame.tabs[cat]
-    if panel and panel.ReskinTab then panel.ReskinTab(tab, true) else PanelTemplates_TabResize(tab, 0) end
-  end
-  if frame.scale then PlaceTabs(frame.scale) end
+-- DragonUI skins the tabs and hangs them from the wood strip in its order. Blizzard's OnShow resize
+-- undoes the width, and DragonUI calls this again afterwards, as it does for its own book.
+local function PlaceTabs()
+  if not frame.scale then return end
+  local faces = {}
+  for index, cat in ipairs(TAB_ORDER) do faces[index] = frame.tabs[cat] end
+  DragonBook().PlaceTabs(frame, faces, frame.scale)
 end
 
 -- Drawing -----------------------------------------------------------------------------------------
@@ -392,7 +344,7 @@ Render = function()
   local className = unit and UnitClass(unit) or nil
   frame.tabs[CLASS]:SetText(className or L["Talents"])
   frame.tabs[GENERAL]:SetText(_G.GENERAL)
-  SkinTabs()
+  PlaceTabs()
   for _, cat in ipairs(TAB_ORDER) do
     local tab = frame.tabs[cat]
     if cat == view.cat then PanelTemplates_SelectTab(tab) else PanelTemplates_DeselectTab(tab) end
@@ -446,145 +398,39 @@ end
 
 -- Window ------------------------------------------------------------------------------------------
 
-local function BuildPaper(stage)
-  return DragonBook().CreatePaperArt(stage, stage:GetFrameLevel() + 1)
-end
-
--- The page corner shows the first frame of its flipbook, as DragonUI's does at rest.
-local function BuildCorner()
-  local holder = CreateFrame("Frame", nil, frame)
-  holder:SetAllPoints(frame)
-  holder:SetFrameLevel(frame:GetFrameLevel() + 2)
-  local corner = holder:CreateTexture(nil, "ARTWORK")
-  Atlas(corner, "spellbook-corner-flipbook-evergreen")
-  corner:SetSize(150, 155)
-  local _, dragon = DragonBook()
-  local atlas = dragon.atlasinfo and dragon.atlasinfo["spellbook-corner-flipbook-evergreen"]
-  if atlas then
-    corner:SetTexCoord(atlas[4], atlas[4] + (atlas[5] - atlas[4]) / 4, atlas[6], atlas[6] + (atlas[7] - atlas[6]) / 2)
-  end
-  return corner
-end
-
-local function BuildChrome()
-  local book, dragon = DragonBook()
-  frame.portrait, frame.title = book.CreateChrome(frame, frame:GetFrameLevel() + 11, frame:GetFrameLevel() + 12)
+-- DragonUI's frame, page corner at rest, close and page-mode buttons, search, pager and empty line.
+local function BuildControls(book)
+  local level = frame:GetFrameLevel()
+  frame.portrait, frame.title = book.CreateChrome(frame, level + 11, level + 12)
+  frame.corner = book.CreatePageCorner(frame, level + 2)
+  book.PaintCorner(frame.corner, 1)
   local close = CreateFrame("Button", nil, frame)
-  close:SetSize(24, 24)
-  close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 1, 0)
-  close:SetFrameLevel(frame:GetFrameLevel() + 13)
-  close:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
-  close:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
-  close:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", "ADD")
+  book.DressCloseButton(close, frame, level + 13)
   close:SetScript("OnClick", function() frame:Hide() end)
-  local panel = dragon.CharacterPanel
-  if panel and panel.ModernizeCloseButton then panel.ModernizeCloseButton(close, frame, 1, 0) end
   frame.close = close
-  -- One or two pages, like DragonUI's red button; the choice holds for the bot book this session.
-  local mode = CreateFrame("Button", nil, frame)
-  mode:SetSize(24, 24)
-  mode:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -24, 0)
-  mode:SetFrameLevel(frame:GetFrameLevel() + 13)
-  local sheet = dragon.atlasinfo and dragon.atlasinfo["redbutton-highlight"]
-  for _, setter in ipairs({ "SetNormalTexture", "SetPushedTexture", "SetHighlightTexture" }) do
-    mode[setter](mode, sheet and sheet[1] or "Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
-  end
-  Atlas(mode:GetHighlightTexture(), "redbutton-highlight")
-  mode:SetScript("OnClick", function()
+  -- One or two pages; the choice holds for the bot book this session.
+  frame.mode = book.CreateModeButton(frame, level + 13, function() return frame.wide end, function()
     view.wide = not frame.wide
     Render()
   end)
-  mode:SetScript("OnEnter", function()
-    GameTooltip:SetOwner(mode, "ANCHOR_LEFT")
-    GameTooltip:SetText(frame.wide and Text("Show single page") or Text("Show second page"))
-    GameTooltip:Show()
-  end)
-  mode:SetScript("OnLeave", GameTooltip_Hide)
-  frame.mode = mode
-end
-
-local function BuildSearch()
-  local _, dragon = DragonBook()
-  local finder = CreateFrame("EditBox", nil, frame)
-  finder:SetSize(220, 22)
-  finder:SetFrameLevel(frame:GetFrameLevel() + 3)
-  finder:SetAutoFocus(false)
-  finder:SetFontObject(ChatFontNormal)
-  finder:SetTextInsets(18, 20, 0, 0)
-  local border = "Interface\\Common\\Common-Input-Border"
-  local capLeft = finder:CreateTexture(nil, "BACKGROUND")
-  capLeft:SetTexture(border)
-  capLeft:SetTexCoord(0, 0.0625, 0, 0.625)
-  capLeft:SetSize(8, 20)
-  capLeft:SetPoint("LEFT", finder, "LEFT", -5, 0)
-  local capRight = finder:CreateTexture(nil, "BACKGROUND")
-  capRight:SetTexture(border)
-  capRight:SetTexCoord(0.9375, 1, 0, 0.625)
-  capRight:SetSize(8, 20)
-  capRight:SetPoint("RIGHT", finder, "RIGHT", 0, 0)
-  local span = finder:CreateTexture(nil, "BACKGROUND")
-  span:SetTexture(border)
-  span:SetTexCoord(0.0625, 0.9375, 0, 0.625)
-  span:SetHeight(20)
-  span:SetPoint("TOPLEFT", capLeft, "TOPRIGHT", 0, 0)
-  span:SetPoint("BOTTOMRIGHT", capRight, "BOTTOMLEFT", 0, 0)
-  local glass = finder:CreateTexture(nil, "OVERLAY")
-  glass:SetTexture((dragon._dir or "") .. "Collections\\UI-Searchbox-Icon")
-  glass:SetSize(14, 14)
-  glass:SetPoint("LEFT", finder, "LEFT", 2, -1.5)
-  local hint = finder:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-  hint:SetPoint("LEFT", finder, "LEFT", 20, 0)
-  hint:SetText(SEARCH)
-  finder:SetScript("OnEditFocusGained", function() hint:Hide() end)
-  finder:SetScript("OnEditFocusLost", function() if (finder:GetText() or "") == "" then hint:Show() end end)
-  finder:SetScript("OnEscapePressed", function()
-    finder:SetText("")
-    finder:ClearFocus()
-  end)
-  finder:SetScript("OnEnterPressed", finder.ClearFocus)
-  finder:SetScript("OnTextChanged", function(self)
-    local book = DragonBook()
-    local text = self:GetText()
-    local query = nil
-    if text and text ~= "" then
-      query = type(book.NormalizeQuery) == "function" and book.NormalizeQuery(text) or string.lower(text)
-    end
+  frame.search = book.CreateSearchBox(frame, function(query)
     if query == view.query then return end
     view.query, view.page = query, 1
     Render()
   end)
-  frame.search = finder
-end
-
-local function BuildPager()
-  local pager = CreateFrame("Frame", nil, frame)
-  pager:SetSize(146, 32)
-  pager:SetFrameLevel(frame:GetFrameLevel() + 3)
-  frame.pageText = pager:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-  frame.pageText:SetPoint("RIGHT", pager, "RIGHT", -76, 0)
-  frame.pageText:SetJustifyH("RIGHT")
-  frame.pageText:SetTextColor(0, 0, 0)
-  frame.pageText:SetShadowOffset(0, 0)
-  frame.pager = pager
+  frame.search:SetFrameLevel(level + 3)
+  frame.pager, frame.pageText = book.CreatePager(frame)
+  frame.pager:SetFrameLevel(level + 3)
   local function arrow(direction, step)
     local turner = CreateFrame("Button", nil, frame)
-    turner:SetSize(32, 32)
-    turner:SetFrameLevel(frame:GetFrameLevel() + 4)
-    local art = "Interface\\Buttons\\UI-SpellbookIcon-" .. direction .. "Page-"
-    turner:SetNormalTexture(art .. "Up")
-    turner:SetPushedTexture(art .. "Down")
-    turner:SetDisabledTexture(art .. "Disabled")
-    turner:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+    book.DressPageArrow(turner, direction)
+    turner:SetFrameLevel(level + 4)
     turner:SetScript("OnClick", function() Turn(step) end)
     return turner
   end
   frame.next = arrow("Next", 1)
   frame.prev = arrow("Prev", -1)
-  frame.empty = InkLabel(frame.stage, "ARTWORK", "GameFontHighlightLarge", 16)
-  frame.empty:SetJustifyH("CENTER")
-  local book = DragonBook()
-  frame.empty:SetPoint("CENTER", frame.stage, "TOPLEFT", book.PageLeft(1) + book.GRID.viewW / 2,
-                       book.GRID.viewTop - book.GRID.viewH / 2)
+  frame.empty = book.CreateEmptyLine(frame.stage, frame.stage)
 end
 
 -- DragonUI levels a tab one above its parent, four while selected. The tabs' own holder sits above
@@ -598,7 +444,7 @@ local function BuildTabs()
     local tab = CreateFrame("Button", "EraTalentsBotBookFrameTab" .. cat, holder, "CharacterFrameTabButtonTemplate")
     tab:SetID(cat)
     tab:SetFrameLevel(holder:GetFrameLevel() + 1)
-    tab._duiRelayout = SkinTabs
+    tab._duiRelayout = PlaceTabs
     tab:SetScript("OnClick", function(self)
       view.cat, view.page, view.picked = self:GetID(), 1, true
       PlaySound("igCharacterInfoTab")
@@ -626,12 +472,10 @@ local function BuildFrame()
   fill:SetPoint("TOPLEFT", frame, "TOPLEFT", 2, -21)
   fill:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
   frame.stage = CreateFrame("Frame", nil, frame)
-  frame.art = BuildPaper(frame.stage)
+  local book = DragonBook()
+  frame.art = book.CreatePaperArt(frame.stage, frame.stage:GetFrameLevel() + 1)
   frame.cards, frame.headers = {}, {}
-  BuildChrome()
-  frame.corner = BuildCorner()
-  BuildSearch()
-  BuildPager()
+  BuildControls(book)
   BuildTabs()
   frame:EnableMouseWheel(true)
   frame:SetScript("OnMouseWheel", function(_, delta) Turn(-delta) end)
