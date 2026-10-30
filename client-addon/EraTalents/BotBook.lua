@@ -1,7 +1,7 @@
 -- MultiBot's bot spellbook in DragonUI's book. Window, pages, cards, section headers, tabs, search and
--- pager are DragonUI's: its spellbook module's layout functions place the cards, its atlas art and
--- strings dress them, and the card and header pieces mirror its book_slots.lua (MIT, NeticSoul), so a
--- bot's book reads like the player's. The data is the bot's: its learned spells from MultiBot and, from
+-- pager are DragonUI's: its spellbook module's layout functions place the cards and its shared
+-- builders draw the paper, frame, card faces and section headers, so a bot's book reads like the
+-- player's. The data is the bot's: its learned spells from MultiBot and, from
 -- the server's trainer list for that bot (BOOK), the spells it can still learn, by talent tree. Cards
 -- keep MultiBot's actions: left-click casts, right-click makes a macro and shift-click puts the spell on
 -- the bot's skip list. Without DragonUI's spellbook module, or with it off, MultiBot keeps its own window.
@@ -24,21 +24,14 @@ local TREES = {
   [7] = { "Elemental", "Enhancement", "Restoration" }, [8] = { "Arcane", "Fire", "Frost" },
   [9] = { "Affliction", "Demonology", "Destruction" }, [11] = { "Balance", "Feral Combat", "Restoration" },
 }
--- Offsets of DragonUI's icon frame art around a 40-unit icon well (book_slots.lua SHAPES).
-local SHAPES = {
-  square = { ring = "spellbook-item-iconframe", hover = "spellbook-item-iconframe-hover",
-             scroll = "spellbook-item-needtrainer-iconframe-backplate", -11, 1, 1, -7 },
-  squareOff = { ring = "spellbook-item-iconframe-inactive", hover = "spellbook-item-iconframe-hover",
-                scroll = "spellbook-item-needtrainer-iconframe-backplate", -10, 1, 2, -5 },
-}
-local SHAPE_PARTS = { "ring", "hover", "scroll" }
-
 -- DragonUI's spellbook module and the addon around it, when they offer what the book uses.
 local function DragonBook()
   local dragon = _G.DragonUI
   local book = type(dragon) == "table" and dragon.SpellbookModule
   if type(book) ~= "table" or type(book.FlowSections) ~= "function" or type(book.FitWindow) ~= "function"
-      or type(book.InkLabel) ~= "function"
+      or type(book.InkLabel) ~= "function" or type(book.CreateCardFace) ~= "function"
+      or type(book.PaintCardFrame) ~= "function" or type(book.CreateSectionHeader) ~= "function"
+      or type(book.CreatePaperArt) ~= "function" or type(book.CreateChrome) ~= "function"
       or type(_G.DragonUI_NineSlice) ~= "table" then
     return nil
   end
@@ -222,12 +215,6 @@ end
 
 -- Cards -------------------------------------------------------------------------------------------
 
-local function OnWell(piece, well, shape, grow)
-  piece:ClearAllPoints()
-  piece:SetPoint("TOPLEFT", well, "TOPLEFT", shape[1] * grow, shape[2] * grow)
-  piece:SetPoint("BOTTOMRIGHT", well, "BOTTOMRIGHT", shape[3] * grow, shape[4] * grow)
-end
-
 local function InkLabel(parent, layer, fontObject, size)
   return DragonBook().InkLabel(parent, layer, fontObject, size)
 end
@@ -289,33 +276,8 @@ local function BuildCard(grid)
   card:SetSize(grid.cardW, grid.cardH)
   card:SetFrameLevel(frame.stage:GetFrameLevel() + 3)
   card:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-  card.grow = grid.iconButton / 40
-  local well = CreateFrame("Frame", nil, card)
-  well:SetSize(grid.iconButton, grid.iconButton)
-  well:SetPoint("LEFT", card, "LEFT", 0, 0)
-  card.well = well
-  card.plate = card:CreateTexture(nil, "BACKGROUND")
-  Atlas(card.plate, "spellbook-item-backplate", true)
-  card.plate:SetPoint("CENTER", card, "CENTER", 5, -5)
-  card.halo = card:CreateTexture(nil, "BORDER")
-  Atlas(card.halo, "spellbook-item-needtrainer-shadow")
-  card.halo:SetSize(56 * card.grow, 56 * card.grow)
-  card.halo:SetPoint("CENTER", well, "CENTER", 0, 0)
-  card.scroll = card:CreateTexture(nil, "ARTWORK")
-  card.icon = card:CreateTexture(nil, "OVERLAY")
-  card.icon:SetSize(grid.iconSize, grid.iconSize)
-  card.icon:SetPoint("CENTER", well, "CENTER", 0, 0)
-  local textWidth = grid.cardW - grid.iconButton - 14
-  card.name = InkLabel(card, "OVERLAY", "GameFontHighlightLarge", 16)
-  card.name:SetWidth(textWidth)
-  card.name:SetPoint("TOPLEFT", well, "TOPRIGHT", 10, -1)
-  card.sub = InkLabel(card, "OVERLAY", "GameFontNormalSmall", 13)
-  card.sub:SetWidth(textWidth)
-  card.sub:SetPoint("TOPLEFT", card.name, "BOTTOMLEFT", 0, -2)
-  local rings = CreateFrame("Frame", nil, card)
-  rings:SetFrameLevel(card:GetFrameLevel() + 2)
-  rings:SetAllPoints(card)
-  card.ring = rings:CreateTexture(nil, "ARTWORK")
+  local rings = DragonBook().CreateCardFace(card, grid.iconButton, grid.iconSize, grid.cardW - grid.iconButton - 14,
+                                            card:GetFrameLevel() + 2)
   card.hover = rings:CreateTexture(nil, "OVERLAY")
   card.hover:SetBlendMode("ADD")
   card:SetScript("OnEnter", CardEnter)
@@ -328,13 +290,7 @@ local function PaintCard(card, entry, skips)
   card.entry = entry
   local grey = entry.grey
   local active = grey or skips[entry.spellID] ~= false
-  local shape = SHAPES[grey and "squareOff" or "square"]
-  for _, part in ipairs(SHAPE_PARTS) do
-    OnWell(card[part], card.well, shape, card.grow)
-    Atlas(card[part], shape[part])
-  end
-  local trainable = grey and entry.state == "ready"
-  if trainable then card.halo:Show(); card.scroll:Show() else card.halo:Hide(); card.scroll:Hide() end
+  DragonBook().PaintCardFrame(card, grey and "squareOff" or "square", grey and entry.state == "ready")
   local icon = entry.icon or "Interface\\Icons\\INV_Misc_QuestionMark"
   if not string.find(icon, "[/\\]") then icon = "Interface\\Icons\\" .. icon end
   card.icon:SetTexture(icon)
@@ -350,24 +306,7 @@ local function PaintCard(card, entry, skips)
 end
 
 local function BuildHeader(grid)
-  local header = CreateFrame("Frame", nil, frame.stage)
-  header:SetSize(grid.viewW, grid.headerH)
-  header:SetFrameLevel(frame.stage:GetFrameLevel() + 2)
-  local plate = header:CreateTexture(nil, "BACKGROUND")
-  Atlas(plate, "spellbook-list-backplate")
-  plate:SetSize(416, 106)
-  plate:SetPoint("LEFT", header, "LEFT", -85, 10)
-  plate:SetAlpha(0.65)
-  local rule = header:CreateTexture(nil, "BORDER")
-  Atlas(rule, "spellbook-divider")
-  rule:SetHeight(11)
-  rule:SetPoint("BOTTOMLEFT", header, "BOTTOMLEFT", -32, 0)
-  rule:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", -60, 0)
-  header.title = InkLabel(header, "ARTWORK", "GameFontNormalHuge", 24)
-  header.title:SetPoint("TOPLEFT", header, "TOPLEFT", -8, 0)
-  header.title:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", -60, 0)
-  header.title:SetJustifyV("MIDDLE")
-  return header
+  return DragonBook().CreateSectionHeader(frame.stage, grid.viewW, grid.headerH, frame.stage:GetFrameLevel() + 2)
 end
 
 -- Layout: DragonUI's window at its content scale --------------------------------------------------
@@ -508,29 +447,7 @@ end
 -- Window ------------------------------------------------------------------------------------------
 
 local function BuildPaper(stage)
-  local paper = CreateFrame("Frame", nil, stage)
-  paper:SetAllPoints(stage)
-  local art = {}
-  art.left = paper:CreateTexture(nil, "BACKGROUND")
-  Atlas(art.left, "spellbook-background-evergreen-left")
-  art.left:SetPoint("TOPLEFT", stage, "TOPLEFT", 2, -82)
-  art.left:SetPoint("BOTTOMRIGHT", stage, "BOTTOM", -1, 2)
-  art.right = paper:CreateTexture(nil, "BACKGROUND")
-  Atlas(art.right, "spellbook-background-evergreen-right")
-  art.ribbon = paper:CreateTexture(nil, "BORDER")
-  Atlas(art.ribbon, "spellbook-background-evergreen-ribbon")
-  art.ribbon:SetWidth(102)
-  art.ribbon:SetPoint("TOP", stage, "TOP", 0, -82)
-  art.ribbon:SetPoint("BOTTOM", stage, "BOTTOM", 0, 2)
-  art.wood = paper:CreateTexture(nil, "ARTWORK")
-  Atlas(art.wood, "spellbook-header-left-half")
-  art.wood:SetHeight(58)
-  art.woodRight = paper:CreateTexture(nil, "ARTWORK")
-  Atlas(art.woodRight, "spellbook-header-right-half")
-  art.woodRight:SetHeight(58)
-  art.woodRight:SetPoint("TOPLEFT", stage, "TOP", 0, -26)
-  art.woodRight:SetPoint("TOPRIGHT", stage, "TOPRIGHT", -8, -26)
-  return art
+  return DragonBook().CreatePaperArt(stage, stage:GetFrameLevel() + 1)
 end
 
 -- The page corner shows the first frame of its flipbook, as DragonUI's does at rest.
@@ -550,21 +467,8 @@ local function BuildCorner()
 end
 
 local function BuildChrome()
-  local _, dragon = DragonBook()
-  local chrome = CreateFrame("Frame", nil, frame)
-  chrome:SetAllPoints(frame)
-  chrome:SetFrameLevel(frame:GetFrameLevel() + 11)
-  DragonUI_NineSlice.ApplyLayout(chrome, DragonUI_NineSlice.GetLayout("PortraitFrameTemplateMinimizable"))
-  frame.portrait = chrome:CreateTexture(nil, "ARTWORK")
-  frame.portrait:SetSize(57, 57)
-  frame.portrait:SetPoint("TOPLEFT", frame, "TOPLEFT", -3, 6)
-  local band = CreateFrame("Frame", nil, frame)
-  band:SetAllPoints(frame)
-  band:SetFrameLevel(frame:GetFrameLevel() + 12)
-  frame.title = band:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  frame.title:SetPoint("TOPLEFT", frame, "TOPLEFT", 58, -6)
-  frame.title:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -24, -6)
-  frame.title:SetJustifyH("CENTER")
+  local book, dragon = DragonBook()
+  frame.portrait, frame.title = book.CreateChrome(frame, frame:GetFrameLevel() + 11, frame:GetFrameLevel() + 12)
   local close = CreateFrame("Button", nil, frame)
   close:SetSize(24, 24)
   close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 1, 0)
