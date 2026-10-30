@@ -1344,7 +1344,7 @@ tabs:
     # not-in-_ref lint stay meaningful.
     mechanic: spellmod
     affects: ["Arcane Explosion", "Arcane Blast", "Arcane Missile", Counterspell, Spellsteal, Slow]
-    affectsMask: { a: 2703605760, b: 16, c: 0 }   # 0xa1205000 / 0x10 — TBC's own arcane set
+    affectsMask: { a: 2703249408, b: 16, c: 0 }   # 0xa1205000 / 0x10 — TBC's own arcane set
     op: resistMiss
     kind: flat
     vals: [2, 4, 6, 8, 10]
