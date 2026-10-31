@@ -255,6 +255,7 @@ a small band-gated core patch carries it (called out per class below).
   has three ranks.
 - **Improved Lay on Hands** — the cooldown reduction, plus a +15/30% armor buff on the target that
   the WotLK talent lacks.
+- **Sense Undead** — taught by The Tome of Valor, not the trainer, which sells it from WotLK on.
 
 **TBC**
 
@@ -289,6 +290,7 @@ a small band-gated core patch carries it (called out per class below).
   values TBC did not change; Improved Sanctity Aura adds +1/2% on top.
 - **Reckoning** — the one talent here that takes the stock WotLK proc chain, because TBC's proc
   rate already matches it.
+- **Sense Undead** — still quest-taught: The Tome of Valor, or Return to Silvermoon for blood elves.
 
 ## Priest
 
@@ -592,6 +594,8 @@ retuning.
   does not.
 - **Stance modifiers** — hidden passives put each stance's damage and threat back at 1.12.1 values
   (Defensive is -10% damage done and taken and +30% threat, against WotLK's -5% / -10% / +45%).
+- **Intercept** — taught with Berserker Stance by The Affray, not the trainer, which sells it from
+  WotLK on; its later ranks are trained as usual.
 
 **TBC**
 
@@ -620,6 +624,7 @@ retuning.
 - **Mace Specialization** — the 3-second stun, plus 7 rage.
 - **Improved Berserker Rage** and the **stance modifiers** — as Vanilla; 1.12.1 and 2.4.3 stance
   numbers are identical.
+- **Intercept** — still taught by The Affray.
 
 ## Death Knight
 

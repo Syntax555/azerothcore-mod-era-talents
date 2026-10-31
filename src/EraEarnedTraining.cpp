@@ -58,6 +58,30 @@ bool QuestTotemEarned(Player* player, uint32 spellId)
     return true;
 }
 
+// Vanilla and TBC taught these lessons only as class quest rewards, which still teach them; their
+// trainers sell them from Wrath on. Later ranks build on the first, so the first rank decides.
+struct QuestLesson { uint8 classId; uint32 spellId; uint32 quests[2]; };
+constexpr QuestLesson kQuestLessons[] = {
+    { 1, 20252, { 1719,    0 } },  // Warrior Intercept   <- The Affray, with Berserker Stance
+    { 2,  5502, { 1652, 9691 } },  // Paladin Sense Undead <- The Tome of Valor; Return to Silvermoon
+};
+
+bool QuestLessonEarned(Player* player, EraId era, uint32 spellId)
+{
+    if (era == ERA_WOTLK)
+        return true;
+    for (QuestLesson const& lesson : kQuestLessons)
+    {
+        if (lesson.classId != player->getClass() || lesson.spellId != spellId)
+            continue;
+        for (uint32 quest : lesson.quests)
+            if (quest && player->GetQuestRewardStatus(quest))
+                return true;
+        return player->HasSpell(spellId);
+    }
+    return true;
+}
+
 bool StockTalentGate(Player* player, EraId era, uint32 spellId)
 {
     uint32 root = ChainRoot(spellId);
@@ -168,7 +192,7 @@ std::vector<uint32> Snapshot(Player* player)
 bool CanTrain(Player* player, EraId era, uint32 spellId)
 {
     return player && uint8(era) <= uint8(ERA_WOTLK) && VariantAllowed(player, era, spellId) &&
-           QuestTotemEarned(player, spellId);
+           QuestTotemEarned(player, spellId) && QuestLessonEarned(player, era, spellId);
 }
 
 void Restore(Player* player, EraId era, std::vector<uint32> const& acquired)
