@@ -79,8 +79,10 @@ class era_ignite : public AuraScript
         int32 amount = int32(CalculatePct(eventInfo.GetDamageInfo()->GetDamage(), pct)
                              / igniteDot->GetMaxTicks());
 
+        // As in core Ignite, the rolling DoT alone must not start combat.
         eventInfo.GetProcTarget()->CastDelayedSpellWithPeriodicAmount(
-            eventInfo.GetActor(), SPELL_ERA_IGNITE_DOT, SPELL_AURA_PERIODIC_DAMAGE, amount);
+            eventInfo.GetActor(), SPELL_ERA_IGNITE_DOT, SPELL_AURA_PERIODIC_DAMAGE, amount, EFFECT_0,
+            TRIGGERED_DONT_ENTER_COMBAT);
     }
 
     void Register() override
