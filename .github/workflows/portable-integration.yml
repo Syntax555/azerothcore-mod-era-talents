@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      portable-ref:
+        description: Assembly branch, tag or commit with the fixtures to check against
+        default: main
 
 permissions:
   contents: read
@@ -17,54 +21,30 @@ concurrency:
 
 jobs:
   integration:
-    name: Check earned-progression integration
+    # The assembly's shared workflow checks this commit with the module's fixtures.
+    uses: Syntax555/mod-playerbots-portable/.github/workflows/module-integration.yml@main
+    with:
+      module: mod-era-talents
+      portable-ref: ${{ inputs.portable-ref || 'main' }}
+
+  addon:
+    name: Test historical addon locales and Lua behavior
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    defaults:
-      run:
-        shell: bash
-        working-directory: portable
+    timeout-minutes: 15
     steps:
-      - name: Check out the module under test
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
         with:
-          ref: ${{ github.sha }}
-          path: module
           persist-credentials: false
 
-      - name: Check out the portable assembly
-        uses: actions/checkout@v7
-        with:
-          repository: Syntax555/mod-playerbots-portable
-          ref: main
-          path: portable
-          persist-credentials: false
-
-      - name: Install native fixture dependencies
+      - name: Install the test dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y build-essential cmake lua5.1 python3-venv
-          python3 -m venv "$RUNNER_TEMP/gameplay-python"
-          "$RUNNER_TEMP/gameplay-python/bin/python" -m pip install 'PyYAML==6.0.3'
-          echo "$RUNNER_TEMP/gameplay-python/bin" >> "$GITHUB_PATH"
-          lua5.1 -e 'assert(_VERSION == "Lua 5.1")'
-
-      - name: Prepare the assembly’s pinned dependencies
-        run: cmake -P cmake/PrepareModules.cmake
-
-      - name: Use the current module with the pinned assembly
-        run: |
-          set -euo pipefail
-          target=".module-cache/prepared-core/modules/mod-era-talents"
-          rm -rf "$target"
-          mkdir -p "$target"
-          git -C ../module archive HEAD | tar -x -C "$target"
-
-      - name: Test the module’s native integration
-        run: python3 cmake/tests/run_fixtures.py module --module mod-era-talents
+          sudo apt-get install --no-install-recommends -y lua5.1 python3-venv
+          python3 -m venv "$RUNNER_TEMP/addon-python"
+          "$RUNNER_TEMP/addon-python/bin/python" -m pip install 'PyYAML==6.0.3'
+          echo "$RUNNER_TEMP/addon-python/bin" >> "$GITHUB_PATH"
 
       - name: Test historical addon locales and Lua behavior
         run: |
-          cd .module-cache/prepared-core/modules/mod-era-talents
           python3 tools/test_era_locales.py
           for fixture in client-addon/EraTalents/test_*.lua; do lua5.1 "$fixture"; done
